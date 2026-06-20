@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EvalForge — Cursor Cloud Agent Testing Mirror</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #1a1f2e;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-muted: #8b949e;
+            --blue: #58a6ff;
+            --green: #3fb950;
+            --orange: #d29922;
+            --red: #f85149;
+            --purple: #bc8cff;
+            --cyan: #39d2c0;
+            --pink: #f778ba;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .hero {
+            background: linear-gradient(135deg, #0d1117, #1a1a2e 50%, #16213e);
+            padding: 72px 40px 56px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .hero h1 {
+            font-size: 2.8em;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--blue), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 14px;
+        }
+        .hero .subtitle {
+            color: var(--text-muted);
+            font-size: 1.15em;
+            max-width: 780px;
+            margin: 0 auto 24px;
+        }
+        .badge {
+            display: inline-block;
+            background: rgba(88,166,255,.12);
+            border: 1px solid rgba(88,166,255,.3);
+            color: var(--blue);
+            padding: 5px 16px;
+            border-radius: 20px;
+            font-size: .82em;
+            font-weight: 600;
+        }
+        .container { max-width: 1180px; margin: 0 auto; padding: 0 36px 80px; }
+        .section { margin: 56px 0; }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 28px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .num {
+            width: 44px; height: 44px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 1.1em; flex-shrink: 0;
+        }
+        .num.blue { background: rgba(88,166,255,.15); color: var(--blue); border: 1px solid rgba(88,166,255,.3); }
+        .num.green { background: rgba(63,185,80,.15); color: var(--green); border: 1px solid rgba(63,185,80,.3); }
+        .num.orange { background: rgba(210,153,34,.15); color: var(--orange); border: 1px solid rgba(210,153,34,.3); }
+        .num.purple { background: rgba(188,140,255,.15); color: var(--purple); border: 1px solid rgba(188,140,255,.3); }
+        .num.cyan { background: rgba(57,210,192,.15); color: var(--cyan); border: 1px solid rgba(57,210,192,.3); }
+        .num.red { background: rgba(248,81,73,.15); color: var(--red); border: 1px solid rgba(248,81,73,.3); }
+        h2 { font-size: 1.65em; font-weight: 700; }
+        h3 { font-size: 1.2em; font-weight: 600; margin: 24px 0 12px; color: var(--blue); }
+        h4 { font-size: 1.05em; font-weight: 600; margin: 16px 0 8px; }
+        p, li { color: var(--text-muted); font-size: .94em; }
+        ul, ol { padding-left: 22px; margin: 10px 0; }
+        li { margin: 5px 0; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin: 20px 0; }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .card h4 { margin-top: 0; display: flex; align-items: center; gap: 8px; }
+        .tag {
+            display: inline-block;
+            font-size: .72em;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin: 2px 3px 2px 0;
+            font-weight: 600;
+        }
+        .tag.blue { background: rgba(88,166,255,.15); color: var(--blue); }
+        .tag.green { background: rgba(63,185,80,.15); color: var(--green); }
+        .tag.orange { background: rgba(210,153,34,.15); color: var(--orange); }
+        .tag.purple { background: rgba(188,140,255,.15); color: var(--purple); }
+        .tag.red { background: rgba(248,81,73,.15); color: var(--red); }
+        .callout {
+            border-radius: 10px;
+            padding: 18px 20px;
+            margin: 20px 0;
+            border-left: 4px solid;
+        }
+        .callout.info { background: rgba(88,166,255,.08); border-color: var(--blue); }
+        .callout.warn { background: rgba(210,153,34,.08); border-color: var(--orange); }
+        .callout.scope { background: rgba(248,81,73,.08); border-color: var(--red); }
+        .callout h4 { margin-top: 0; }
+        .flow {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 28px;
+            text-align: center;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: .85em;
+            line-height: 2;
+            color: var(--text-muted);
+        }
+        .flow .step {
+            display: inline-block;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 14px;
+            margin: 4px;
+            color: var(--text);
+        }
+        .flow .arrow { color: var(--blue); font-size: 1.2em; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: .9em;
+        }
+        th, td {
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            text-align: left;
+        }
+        th { background: var(--bg-secondary); color: var(--text); font-weight: 600; }
+        td { color: var(--text-muted); }
+        pre {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            font-size: .82em;
+            line-height: 1.5;
+            margin: 14px 0;
+        }
+        code { font-family: 'SF Mono', Consolas, monospace; }
+        .kw { color: var(--purple); }
+        .str { color: var(--green); }
+        .cm { color: var(--text-muted); }
+        .phase {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin: 16px 0;
+            overflow: hidden;
+        }
+        .phase-header {
+            background: var(--bg-secondary);
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: default;
+        }
+        .phase-header h4 { margin: 0; color: var(--text); font-size: 1.05em; }
+        .phase-body { padding: 18px 20px; }
+        .phase-id {
+            font-size: .75em;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 12px;
+            background: rgba(88,166,255,.15);
+            color: var(--blue);
+        }
+        .deps { font-size: .8em; color: var(--text-muted); }
+        .checklist li { list-style: none; padding-left: 0; }
+        .checklist li::before { content: "☐ "; color: var(--blue); }
+        footer {
+            text-align: center;
+            padding: 40px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: .85em;
+        }
+        .compare-yes { color: var(--green); font-weight: 700; }
+        .compare-partial { color: var(--orange); font-weight: 700; }
+        .compare-no { color: var(--red); font-weight: 700; }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <h1>EvalForge</h1>
+    <p class="subtitle">
+        A standalone Python orchestrator that mirrors <strong>only the testing workflow</strong> of Cursor cloud agents —
+        environment bootstrap, build/lint gates, terminal tests, API checks, and computer-use UI verification —
+        running on self-hosted GUI VMs and producing Cursor-parity evidence bundles.
+    </p>
+    <span class="badge">Implementation Plan — June 20, 2026</span>
+</div>
+
+<div class="container">
+
+    <!-- 1. NORTH STAR -->
+    <div class="section">
+        <div class="section-header">
+            <div class="num blue">1</div>
+            <h2>North Star &amp; Scope</h2>
+        </div>
+
+        <div class="callout scope">
+            <h4>Explicitly out of scope</h4>
+            <p>EvalForge mirrors <strong>testing only</strong>. It does not implement code generation, subagent spawning, CI auto-fix loops, static Bugbot/Security review, PR creation, or any other Cursor cloud agent capability outside verification.</p>
+        </div>
+
+        <h3>1.1 What Cursor cloud agents do when testing (our reference model)</h3>
+        <p>Based on observed Cursor cloud agent behavior, the verification loop is layered — not a single E2E framework:</p>
+        <ol>
+            <li><strong>Orient</strong> — read repo instructions (<code>AGENTS.md</code>), ports, smoke shortcuts, secrets requirements</li>
+            <li><strong>Bootstrap environment</strong> — install deps, start API/DB/UI via <code>.cursor/environment.json</code> terminals</li>
+            <li><strong>Build &amp; lint gate</strong> — compile, typecheck, linter before functional tests</li>
+            <li><strong>Terminal test suite</strong> — run project-native commands (<code>dotnet test</code>, <code>pytest</code>, <code>npm test</code>)</li>
+            <li><strong>API smoke checks</strong> — HTTP assertions against running services</li>
+            <li><strong>UI verification</strong> — computer-use: screenshot + accessibility context → plan actions → interact → screenshot evidence</li>
+            <li><strong>Gap report</strong> — explicitly list what was not tested (auth flows, live third-party APIs, etc.)</li>
+            <li><strong>Evidence bundle</strong> — logs, screenshots, desktop video, structured summary (what Cursor attaches to PRs)</li>
+        </ol>
+
+        <h3>1.2 Decisions captured from requirements</h3>
+        <table>
+            <tr><th>Decision</th><th>Choice</th></tr>
+            <tr><td>Relationship to Cursor</td><td>Standalone replica — no Cursor SDK/API calls</td></tr>
+            <tr><td>Runtime</td><td>Self-hosted GUI cloud VM (not Docker); user already has VM infra</td></tr>
+            <tr><td>OS strategy</td><td>Multi-OS in plan; <strong>Linux first</strong>, then Windows, then macOS</td></tr>
+            <tr><td>Implementation language</td><td>Python</td></tr>
+            <tr><td>Desktop scope</td><td>Web apps in browser <strong>and</strong> native desktop applications</td></tr>
+            <tr><td>UI automation</td><td>Computer-use style (vision + a11y context + OS-level input)</td></tr>
+            <tr><td>LLM role</td><td><strong>Required</strong>, bring-your-own provider; derives executable steps from acceptance criteria at runtime</td></tr>
+            <tr><td>Acceptance criteria input</td><td>Markdown passed at run time (CLI arg / PR body) — not committed to repo by default</td></tr>
+            <tr><td>Repo config</td><td><code>evalforge.yaml</code> + optional <code>AGENTS.md</code>; env via <code>.cursor/environment.json</code></td></tr>
+            <tr><td>Git integration</td><td>Manual — point at local path or branch (no webhook/GitHub App in v1)</td></tr>
+            <tr><td>Auth during tests</td><td>Secrets vault in config (env vars / encrypted credentials file)</td></tr>
+            <tr><td>Outputs</td><td>HTML report, Slack bot with file uploads, full desktop video + per-step screenshots</td></tr>
+            <tr><td>Success criteria</td><td>Evidence bundle parity with Cursor cloud agent PR artifacts</td></tr>
+            <tr><td>Phasing</td><td>Dependency order only — no week/timeline estimates</td></tr>
+            <tr><td>First dogfood target</td><td>Repo-agnostic; dogfood TBD</td></tr>
+        </table>
+
+        <div class="callout info">
+            <h4>Core philosophy</h4>
+            <p>EvalForge is an <strong>orchestrator + evidence recorder</strong>, not a test framework. It runs the same commands a Cursor cloud agent would run, uses an LLM to translate acceptance criteria into a verification plan, drives the UI like computer-use does, and packages proof. Repos keep their existing test stacks; EvalForge coordinates them.</p>
+        </div>
+    </div>
+
+    <!-- 2. ARCHITECTURE -->
+    <div class="section">
+        <div class="section-header">
+            <div class="num green">2</div>
+            <h2>System Architecture</h2>
+        </div>
+
+        <h3>2.1 High-level component diagram</h3>
+        <div class="flow">
+            <span class="step">CLI / Run Trigger</span>
+            <span class="arrow">→</span>
+            <span class="step">Config Loader</span>
+            <span class="arrow">→</span>
+            <span class="step">AC Parser (markdown in)</span>
+            <span class="arrow">→</span>
+            <span class="step">LLM Test Planner</span>
+            <br>
+            <span class="arrow">↓</span><br>
+            <span class="step">Env Orchestrator</span>
+            <span class="arrow">→</span>
+            <span class="step">Build/Lint Runner</span>
+            <span class="arrow">→</span>
+            <span class="step">Terminal Test Runner</span>
+            <span class="arrow">→</span>
+            <span class="step">API Check Runner</span>
+            <span class="arrow">→</span>
+            <span class="step">Computer-Use Executor</span>
+            <br>
+            <span class="arrow">↓</span><br>
+            <span class="step">Evidence Recorder</span>
+            <span class="arrow">→</span>
+            <span class="step">Gap Analyzer</span>
+            <span class="arrow">→</span>
+            <span class="step">HTML Report + Slack Bot</span>
+        </div>
+
+        <h3>2.2 Component responsibilities</h3>
+        <div class="grid">
+            <div class="card">
+                <h4>🎛️ Orchestrator (<code>evalforge run</code>)</h4>
+                <p>Top-level state machine. Sequences layers in order, aborts or continues based on policy, aggregates results into a single <code>RunResult</code>.</p>
+                <span class="tag blue">Python asyncio</span>
+                <span class="tag green">State machine</span>
+            </div>
+            <div class="card">
+                <h4>📋 Config Loader</h4>
+                <p>Reads <code>evalforge.yaml</code>, <code>AGENTS.md</code>, <code>.cursor/environment.json</code>. Merges secrets from vault. Validates schema.</p>
+                <span class="tag purple">Pydantic models</span>
+            </div>
+            <div class="card">
+                <h4>🧠 LLM Test Planner</h4>
+                <p>Input: acceptance criteria markdown + repo context snapshot. Output: structured <code>VerificationPlan</code> with terminal commands, API checks, and UI scenarios.</p>
+                <span class="tag orange">Pluggable provider</span>
+                <span class="tag blue">Structured JSON output</span>
+            </div>
+            <div class="card">
+                <h4>🖥️ Env Orchestrator</h4>
+                <p>Parses <code>environment.json</code> <code>install</code>, <code>terminals</code>, <code>start</code>. Manages long-running processes, health-check URLs, tmux-like session persistence on VM.</p>
+                <span class="tag cyan">Process supervisor</span>
+            </div>
+            <div class="card">
+                <h4>⚙️ Command Runners</h4>
+                <p>Build/lint, terminal tests, API HTTP checks. Captures stdout/stderr, exit codes, duration. Supports retry policy.</p>
+                <span class="tag green">Subprocess</span>
+            </div>
+            <div class="card">
+                <h4>🖱️ Computer-Use Executor</h4>
+                <p>Loop: capture desktop screenshot + a11y tree → LLM action → OS input → verify. Supports browser windows and native apps.</p>
+                <span class="tag purple">Vision + input</span>
+            </div>
+            <div class="card">
+                <h4>🎬 Evidence Recorder</h4>
+                <p>Full-desktop video (FFmpeg), per-step screenshots, command log capture. Timestamps synced to actions.</p>
+                <span class="tag red">FFmpeg</span>
+                <span class="tag blue">PNG/WebM</span>
+            </div>
+            <div class="card">
+                <h4>📊 Reporters</h4>
+                <p>HTML report (primary human artifact), Slack bot uploads (screenshots/video), JSON export for future CI gates.</p>
+                <span class="tag orange">Slack SDK</span>
+            </div>
+        </div>
+
+        <h3>2.3 Repository layout (EvalForge project)</h3>
+        <pre><code>EvalForge/
+├── evalforge/
+│   ├── cli/                 # Click/Typer CLI entrypoints
+│   ├── config/              # Schema, loaders (evalforge.yaml, environment.json)
+│   ├── planner/             # LLM test planner + prompt templates
+│   ├── orchestrator/        # Run state machine
+│   ├── env/                 # Environment bootstrap (install, terminals, health)
+│   ├── runners/
+│   │   ├── build.py
+│   │   ├── terminal.py
+│   │   └── api.py
+│   ├── computer_use/        # Screenshot, a11y, input, action loop
+│   ├── evidence/            # Recorder, artifact store, gap analyzer
+│   ├── reporters/
+│   │   ├── html.py
+│   │   └── slack.py
+│   └── providers/           # LLM provider adapters (OpenAI, Anthropic, etc.)
+├── schemas/
+│   ├── evalforge.schema.json
+│   └── verification_plan.schema.json
+├── templates/
+│   └── report.html.j2
+├── tests/
+├── PLAN.html                # This document
+├── pyproject.toml
+└── README.md</code></pre>
+    </div>
+
+    <!-- 3. CURSOR PARITY -->
+    <div class="section">
+        <div class="section-header">
+            <div class="num purple">3</div>
+            <h2>Cursor Cloud Agent Parity Matrix</h2>
+        </div>
+        <p>Maps Cursor cloud agent testing behavior to EvalForge features and implementation phase.</p>
+        <table>
+            <tr>
+                <th>Cursor cloud agent behavior</th>
+                <th>EvalForge feature</th>
+                <th>Phase</th>
+                <th>Parity</th>
+            </tr>
+            <tr>
+                <td>Read AGENTS.md for ports, smoke routes, auth bypass</td>
+                <td><code>AGENTS.md</code> parser + inject into planner context</td>
+                <td>1</td>
+                <td class="compare-yes">Full</td>
+            </tr>
+            <tr>
+                <td><code>environment.json</code> install / start / terminals</td>
+                <td>Env Orchestrator</td>
+                <td>2</td>
+                <td class="compare-yes">Full</td>
+            </tr>
+            <tr>
+                <td>Run build + lint before tests</td>
+                <td>Build/Lint Runner (configured or auto-discovered)</td>
+                <td>3</td>
+                <td class="compare-yes">Full</td>
+            </tr>
+            <tr>
+                <td><code>dotnet test</code> / <code>pytest</code> / <code>npm test</code></td>
+                <td>Terminal Test Runner</td>
+                <td>3</td>
+                <td class="compare-yes">Full</td>
+            </tr>
+            <tr>
+                <td>curl / HTTP endpoint validation</td>
+                <td>API Check Runner</td>
+                <td>4</td>
+                <td class="compare-yes">Full</td>
+            </tr>
+            <tr>
+                <td>Computer-use UI smoke (screenshot → act → screenshot)</td>
+                <td>Computer-Use Executor</td>
+                <td>5–6</td>
+                <td class="compare-partial">Partial → Full</td>
+            </tr>
+            <tr>
+                <td>PR artifacts: screenshots, video, logs</td>
+                <td>Evidence Recorder + HTML + Slack</td>
+                <td>7–8</td>
+                <td class="compare-yes">Full</td>
+            </tr>
+            <tr>
+                <td>Gap analysis ("not tested: OAuth, live Azure API")</td>
+                <td>Gap Analyzer (LLM + rule-based)</td>
+                <td>7</td>
+                <td class="compare-yes">Full</td>
+            </tr>
+            <tr>
+                <td>Subagent explore workers</td>
+                <td>—</td>
+                <td>—</td>
+                <td class="compare-no">Out of scope</td>
+            </tr>
+            <tr>
+                <td>CI babysit / auto-fix</td>
+                <td>—</td>
+                <td>—</td>
+                <td class="compare-no">Out of scope</td>
+            </tr>
+            <tr>
+                <td>Bugbot / Security review</td>
+                <td>—</td>
+                <td>—</td>
+                <td class="compare-no">Out of scope</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- 4. CONFIG -->
+    <div class="section">
+        <div class="section-header">
+            <div class="num orange">4</div>
+            <h2>Configuration Contract</h2>
+        </div>
+
+        <h3>4.1 <code>evalforge.yaml</code> (per target repo)</h3>
+        <pre><code><span class="cm"># evalforge.yaml — orchestration config committed to target repo</span>
+<span class="kw">version</span>: <span class="str">"1"</span>
+
+<span class="kw">project</span>:
+  <span class="kw">name</span>: <span class="str">my-app</span>
+
+<span class="kw">llm</span>:
+  <span class="kw">provider</span>: <span class="str">anthropic</span>        <span class="cm"># openai | anthropic | ollama | custom</span>
+  <span class="kw">model</span>: <span class="str">claude-sonnet-4-20250514</span>
+  <span class="cm"># api_key via secrets vault, not in file</span>
+
+<span class="kw">build</span>:
+  <span class="kw">commands</span>:
+    - <span class="kw">name</span>: <span class="str">compile</span>
+      <span class="kw">run</span>: <span class="str">dotnet build Atlas.sln</span>
+    - <span class="kw">name</span>: <span class="str">lint</span>
+      <span class="kw">run</span>: <span class="str">npm run lint</span>
+      <span class="kw">optional</span>: <span class="kw">true</span>
+
+<span class="kw">tests</span>:
+  <span class="kw">commands</span>:
+    - <span class="kw">name</span>: <span class="str">unit</span>
+      <span class="kw">run</span>: <span class="str">dotnet test Atlas.sln --filter Category=Unit</span>
+    - <span class="kw">name</span>: <span class="str">integration</span>
+      <span class="kw">run</span>: <span class="str">dotnet test Atlas.sln --filter Category=Integration</span>
+
+<span class="kw">api</span>:
+  <span class="kw">base_url</span>: <span class="str">http://localhost:5080</span>
+  <span class="cm"># Specific checks derived by LLM from AC; defaults for health:</span>
+  <span class="kw">health</span>:
+    - <span class="kw">method</span>: <span class="str">GET</span>
+      <span class="kw">path</span>: <span class="str">/health</span>
+      <span class="kw">expect_status</span>: <span class="str">200</span>
+
+<span class="kw">ui</span>:
+  <span class="kw">base_url</span>: <span class="str">http://localhost:5173</span>
+  <span class="kw">browser</span>: <span class="str">chromium</span>       <span class="cm"># launched on VM desktop</span>
+  <span class="kw">smoke_route</span>: <span class="str">"/#/tasks"</span>   <span class="cm"># fallback; AGENTS.md may override</span>
+
+<span class="kw">secrets</span>:
+  <span class="kw">file</span>: <span class="str">.evalforge/secrets.env</span>  <span class="cm"># gitignored; injected into env</span>
+
+<span class="kw">evidence</span>:
+  <span class="kw">video</span>: <span class="kw">true</span>
+  <span class="kw">screenshots</span>: <span class="kw">true</span>
+  <span class="kw">output_dir</span>: <span class="str">.evalforge/runs</span>
+
+<span class="kw">slack</span>:
+  <span class="kw">bot_token_secret</span>: <span class="str">SLACK_BOT_TOKEN</span>
+  <span class="kw">channel_id</span>: <span class="str">C0123456789</span>
+
+<span class="kw">policy</span>:
+  <span class="kw">fail_fast</span>: <span class="kw">false</span>            <span class="cm"># continue layers to collect full evidence</span>
+  <span class="kw">max_ui_steps</span>: <span class="str">40</span>
+  <span class="kw">max_ui_retries</span>: <span class="str">4</span>           <span class="cm"># mirror Cursor browser MCP limit</span></code></pre>
+
+        <h3>4.2 <code>AGENTS.md</code> (optional, per target repo)</h3>
+        <p>Parsed as unstructured context for the LLM planner. Recommended sections:</p>
+        <ul>
+            <li><strong>Services</strong> — what runs on which port</li>
+            <li><strong>Smoke routes</strong> — URL paths that bypass auth or reach key UI fast</li>
+            <li><strong>Test commands</strong> — canonical commands if not in evalforge.yaml</li>
+            <li><strong>Known gaps</strong> — integrations that cannot be automated (live Azure DevOps, etc.)</li>
+        </ul>
+
+        <h3>4.3 <code>.cursor/environment.json</code> (reused as-is)</h3>
+        <p>EvalForge reads Cursor's existing format for <code>install</code>, <code>start</code>, and <code>terminals</code> to avoid duplicating service definitions. If missing, fall back to <code>evalforge.yaml</code> <code>services</code> block (future extension).</p>
+
+        <h3>4.4 Acceptance criteria input (runtime)</h3>
+        <pre><code><span class="cm"># Passed at run time — NOT committed by default</span>
+evalforge run \
+  --repo /path/to/target \
+  --acceptance acceptance.md \
+  --branch feature/my-change
+
+<span class="cm"># acceptance.md example</span>
+<span class="kw">## Feature: Task creation</span>
+
+<span class="kw">### Acceptance Criteria</span>
+- User can open the Tasks page and see the task list
+- User can click "New Task", fill title and description, and save
+- New task appears in the list with correct title
+- API returns 201 on POST /api/tasks with valid payload</code></pre>
+    </div>
+
+    <!-- 5. DATA MODEL -->
+    <div class="section">
+        <div class="section-header">
+            <div class="num cyan">5</div>
+            <h2>Core Data Models</h2>
+        </div>
+
+        <h3>5.1 <code>VerificationPlan</code> (LLM output)</h3>
+        <pre><code>{
+  <span class="str">"scenarios"</span>: [
+    {
+      <span class="str">"id"</span>: <span class="str">"ac-1"</span>,
+      <span class="str">"source"</span>: <span class="str">"User can open the Tasks page..."</span>,
+      <span class="str">"layers"</span>: {
+        <span class="str">"terminal"</span>: [{ <span class="str">"command"</span>: <span class="str">"dotnet test ..."</span>, <span class="str">"reason"</span>: <span class="str">"..."</span> }],
+        <span class="str">"api"</span>: [{ <span class="str">"method"</span>: <span class="str">"GET"</span>, <span class="str">"path"</span>: <span class="str">"/api/tasks"</span>, <span class="str">"expect"</span>: { <span class="str">"status"</span>: 200 } }],
+        <span class="str">"ui"</span>: [{ <span class="str">"instruction"</span>: <span class="str">"Navigate to Tasks page and verify list renders"</span> }]
+      }
+    }
+  ],
+  <span class="str">"gaps"</span>: [
+    { <span class="str">"item"</span>: <span class="str">"OAuth login flow"</span>, <span class="str">"reason"</span>: <span class="str">"Requires interactive provider; not in AC"</span> }
+  ]
+}</code></pre>
+
+        <h3>5.2 <code>RunResult</code> (evidence bundle)</h3>
+        <pre><code>{
+  <span class="str">"run_id"</span>: <span class="str">"2026-06-20T14-30-00Z"</span>,
+  <span class="str">"repo"</span>: <span class="str">"/path/to/target"</span>,
+  <span class="str">"branch"</span>: <span class="str">"feature/my-change"</span>,
+  <span class="str">"status"</span>: <span class="str">"passed"</span> | <span class="str">"failed"</span> | <span class="str">"partial"</span>,
+  <span class="str">"layers"</span>: {
+    <span class="str">"env"</span>: { <span class="str">"status"</span>: <span class="str">"passed"</span>, <span class="str">"duration_ms"</span>: 45000, <span class="str">"logs"</span>: <span class="str">"..."</span> },
+    <span class="str">"build"</span>: { ... },
+    <span class="str">"terminal"</span>: { <span class="str">"commands"</span>: [...], <span class="str">"total_passed"</span>: 138, <span class="str">"total_failed"</span>: 0 },
+    <span class="str">"api"</span>: { <span class="str">"checks"</span>: [...] },
+    <span class="str">"ui"</span>: { <span class="str">"scenarios"</span>: [...], <span class="str">"steps"</span>: [...] }
+  },
+  <span class="str">"artifacts"</span>: {
+    <span class="str">"video"</span>: <span class="str">"runs/.../desktop.webm"</span>,
+    <span class="str">"screenshots"</span>: [<span class="str">"step-001.png"</span>, ...],
+    <span class="str">"html_report"</span>: <span class="str">"runs/.../report.html"</span>
+  },
+  <span class="str">"gaps"</span>: [...]
+}</code></pre>
+
+        <p>This schema is the contract for HTML report rendering, Slack uploads, and future CI gate integration.</p>
+    </div>
+
+    <!-- 6. COMPUTER USE -->
+    <div class="section">
+        <div class="section-header">
+            <div class="num red">6</div>
+            <h2>Computer-Use Execution Layer</h2>
+        </div>
+
+        <div class="callout warn">
+            <h4>Approach decision deferred to Phase 5 spike</h4>
+            <p>Three viable approaches — implement a spike on Linux VM before committing:</p>
+        </div>
+
+        <table>
+            <tr>
+                <th>Approach</th>
+                <th>Pros</th>
+                <th>Cons</th>
+                <th>Recommendation</th>
+            </tr>
+            <tr>
+                <td><strong>A. Custom Python loop</strong><br><small>mss screenshot + AT-SPI/a11y + pyautogui/xdotool</small></td>
+                <td>Full control; no vendor lock-in; works offline with local models</td>
+                <td>Most engineering effort; cross-OS input differences</td>
+                <td><strong>Primary path for Linux v1</strong></td>
+            </tr>
+            <tr>
+                <td><strong>B. Vendor computer-use API</strong><br><small>Anthropic computer use, etc.</small></td>
+                <td>Faster to prototype; model trained for desktop interaction</td>
+                <td>Cost; latency; API availability; less control over evidence format</td>
+                <td><strong>Provider adapter option</strong> — use via <code>providers/</code> if spike shows better results</td>
+            </tr>
+            <tr>
+                <td><strong>C. Hybrid browser + OS</strong><br><small>Playwright for browser a11y; pyautogui for native</small></td>
+                <td>Reliable a11y tree in browser; separates concerns</td>
+                <td>Two code paths; doesn't unify native app interaction</td>
+                <td><strong>Browser sub-path inside A</strong> — use Playwright CDP for a11y snapshot where a browser window is active</td>
+            </tr>
+        </table>
+
+        <h3>6.1 Computer-use action loop (mirrors Cursor)</h3>
+        <div class="flow">
+            <span class="step">1. Capture full-desktop screenshot</span>
+            <span class="arrow">→</span>
+            <span class="step">2. Capture a11y tree</span>
+            <span class="arrow">→</span>
+            <span class="step">3. LLM: next action</span>
+            <br>
+            <span class="arrow">↓</span><br>
+            <span class="step">4. Execute (click/type/key/scroll)</span>
+            <span class="arrow">→</span>
+            <span class="step">5. Screenshot evidence</span>
+            <span class="arrow">→</span>
+            <span class="step">6. Verify or retry (max 4)</span>
+            <span class="arrow">→</span>
+            <span class="step">7. Next step or done</span>
+        </div>
+
+        <h3>6.2 Action vocabulary</h3>
+        <ul>
+            <li><code>click(x, y)</code> / <code>click(element_ref)</code> — coordinate or a11y-ref resolved to coordinates</li>
+            <li><code>type(text)</code> — keyboard input to focused element</li>
+            <li><code>key(combo)</code> — e.g. Return, Ctrl+S, Alt+Tab (for native app switching)</li>
+            <li><code>scroll(direction, amount)</code></li>
+            <li><code>wait(condition)</code> — time, text visible, element present (via a11y poll)</li>
+            <li><code>launch(app)</code> — open browser URL or native app binary</li>
+            <li><code>focus_window(title|pid)</code> — for native desktop app context switching</li>
+            <li><code>assert_visible(description)</code> — LLM judges screenshot against expectation</li>
+        </ul>
+
+        <h3>6.3 Linux implementation stack (Phase 5–6)</h3>
+        <div class="grid">
+            <div class="card">
+                <h4>Screenshot</h4>
+                <p><code>mss</code> or <code>grim</code> (Wayland) / <code>scrot</code> (X11) for full desktop capture at planner cadence.</p>
+            </div>
+            <div class="card">
+                <h4>Accessibility</h4>
+                <p><code>pyatspi</code> (AT-SPI2) for Linux native + browser accessibility tree when exposed.</p>
+            </div>
+            <div class="card">
+                <h4>Input</h4>
+                <p><code>xdotool</code> (X11) or <code>ydotool</code> (Wayland) for mouse/keyboard. Abstract behind <code>InputDriver</code> interface.</p>
+            </div>
+            <div class="card">
+                <h4>Video</h4>
+                <p><code>ffmpeg -f x11grab</code> or <code>wf-recorder</code> (Wayland) for full-desktop WebM recording synced to run.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. VM -->
+    <div class="section">
+        <div class="section-header">
+            <div class="num blue">7</div>
+            <h2>VM Deployment Model</h2>
+        </div>
+
+        <p>EvalForge assumes SSH (or agent daemon) access to an existing self-hosted GUI VM. No Docker — desktop apps and computer-use require a real display session.</p>
+
+        <h3>7.1 Deployment modes</h3>
+        <table>
+            <tr><th>Mode</th><th>Description</th><th>Phase</th></tr>
+            <tr>
+                <td><strong>Local agent on VM</strong></td>
+                <td>EvalForge installed directly on the GUI VM. CLI runs in user desktop session. Simplest for v1.</td>
+                <td>2+</td>
+            </tr>
+            <tr>
+                <td><strong>Remote trigger</strong></td>
+                <td>CLI on dev machine SSHes to VM, starts <code>evalforge-worker</code> daemon, streams results back.</td>
+                <td>9</td>
+            </tr>
+            <tr>
+                <td><strong>VM pool</strong></td>
+                <td>Multiple pre-warmed VMs; orchestrator assigns idle VM per run. Requires queue.</td>
+                <td>10+</td>
+            </tr>
+        </table>
+
+        <h3>7.2 VM prerequisites checklist</h3>
+        <ul class="checklist">
+            <li>GUI session active (X11 or Wayland) with logged-in user</li>
+            <li>Python 3.11+ and FFmpeg installed</li>
+            <li>Target repo cloned at known path</li>
+            <li>Secrets file deployed to <code>.evalforge/secrets.env</code> (out of band)</li>
+            <li>Display resolution fixed (1920×1080 recommended for consistent screenshots)</li>
+            <li>Network access to service ports (localhost services started by env orchestrator)</li>
+        </ul>
+
+        <h3>7.3 Multi-OS abstraction</h3>
+        <p>Define platform interfaces early; implement Linux first:</p>
+        <ul>
+            <li><code>ScreenshotDriver</code> — capture full desktop</li>
+            <li><code>AccessibilityDriver</code> — enumerate UI tree</li>
+            <li><code>InputDriver</code> — mouse, keyboard, window focus</li>
+            <li><code>VideoRecorder</code> — desktop capture</li>
+            <li><code>ProcessSupervisor</code> — start/stop shell commands (OS-agnostic)</li>
+        </ul>
+        <table>
+            <tr><th>OS</th><th>Screenshot</th><th>A11y</th><th>Input</th><th>Video</th><th>Phase</th></tr>
+            <tr><td>Linux</td><td>mss / grim</td><td>AT-SPI2</td><td>xdotool / ydotool</td><td>ffmpeg x11grab</td><td>5–6</td></tr>
+            <tr><td>Windows</td><td>mss / PIL</td><td>UI Automation</td><td>pywinauto</td><td>ffmpeg gdigrab</td><td>11</td></tr>
+            <tr><td>macOS</td><td>mss</td><td>AX API (atomacos)</td><td>pyobjc / cliclick</td><td>ffmpeg avfoundation</td><td>12</td></tr>
+        </table>
+    </div>
+
+    <!-- 8. PHASES -->
+    <div class="section">
+        <div class="section-header">
+            <div class="num green">8</div>
+            <h2>Implementation Phases</h2>
+        </div>
+
+        <p>Phases are ordered by dependency. Each phase ends with demonstrable, testable deliverables before the next begins.</p>
+
+        <div class="phase">
+            <div class="phase-header">
+                <h4>Phase 0 — Project Foundation</h4>
+                <span class="phase-id">P0</span>
+            </div>
+            <div class="phase-body">
+                <p class="deps">Dependencies: none</p>
+                <ul class="checklist">
+                    <li>Python package scaffold (<code>pyproject.toml</code>, <code>evalforge</code> module, CLI stub)</li>
+                    <li>Pydantic models for config, RunResult, VerificationPlan</li>
+                    <li>JSON schemas exported to <code>schemas/</code></li>
+                    <li>Basic CLI: <code>evalforge --version</code>, <code>evalforge validate-config</code></li>
+                    <li>README with architecture summary linking to this plan</li>
+                </ul>
+                <p><strong>Exit criteria:</strong> <code>evalforge validate-config --repo .</code> parses a sample evalforge.yaml without error.</p>
+            </div>
+        </div>
+
+        <div class="phase">
+            <div class="phase-header">
+                <h4>Phase 1 — Config &amp; Context Loading</h4>
+                <span class="phase-id">P1</span>
+            </div>
+            <div class="phase-body">
+                <p class="deps">Dependencies: P0</p>
+                <ul class="checklist">
+                    <li><code>evalforge.yaml</code> loader with schema validation</li>
+                    <li><code>AGENTS.md</code> reader (raw text → planner context block)</li>
+                    <li><code>.cursor/environment.json</code> parser</li>
+                    <li>Secrets vault loader (<code>.evalforge/secrets.env</code>, env var injection)</li>
+                    <li>Acceptance criteria markdown loader (CLI <code>--acceptance</code> file or <code>--acceptance-stdin</code>)</li>
+                </ul>
+                <p><strong>Exit criteria:</strong> <code>evalforge plan --repo X --acceptance ac.md --dry-run</code> prints merged config + AC text.</p>
+            </div>
+        </div>
+
+        <div class="phase">
+            <div class="phase-header">
+                <h4>Phase 2 — Environment Orchestrator</h4>
+                <span class="phase-id">P2</span>
+            </div>
+            <div class="phase-body">
+                <p class="deps">Dependencies: P1</p>
+                <ul class="checklist">
+                    <li>Run <code>install</code> command from environment.json</li>
+                    <li>Start <code>terminals</code> entries as background processes with log capture</li>
+                    <li>Health-check polling (HTTP GET until 200 or timeout)</li>
+                    <li>Teardown: kill child processes on run end</li>
+                    <li>Record env layer in RunResult with stdout/stderr logs</li>
+                </ul>
+                <p><strong>Exit criteria:</strong> On a sample multi-service repo, <code>evalforge env up --repo X</code> starts services and reports healthy.</p>
+            </div>
+        </div>
+
+        <div class="phase">
+            <div class="phase-header">
+                <h4>Phase 3 — Build, Lint &amp; Terminal Test Runners</h4>
+                <span class="phase-id">P3</span>
+            </div>
+            <div class="phase-body">
+                <p class="deps">Dependencies: P2</p>
+                <ul class="checklist">
+                    <li>Generic command runner: subprocess, timeout, stdout/stderr capture, exit code</li>
+                    <li>Build/lint layer from evalforge.yaml <code>build.commands</code></li>
+                    <li>Terminal test layer from <code>tests.commands</code></li>
+                    <li>Parse test output for pass/fail counts (xUnit, pytest, jest parsers — start with one, extensible)</li>
+                    <li>Retry policy for flaky tests (configurable)</li>
+                </ul>
+                <p><strong>Exit criteria:</strong> <code>evalforge run --repo X --acceptance ac.md --layers build,terminal</code> produces RunResult JSON with test counts.</p>
+            </div>
+        </div>
+
+        <div class="phase">
+            <div class="phase-header">
+                <h4>Phase 4 — API Check Runner</h4>
+                <span class="phase-id">P4</span>
+            </div>
+            <div class="phase-body">
+                <p class="deps">Dependencies: P2</p>
+                <ul class="checklist">
+                    <li>HTTP client for GET/POST/PUT/DELETE with headers, body, auth from secrets</li>
+                    <li>Health checks from evalforge.yaml <code>api.health</code></li>
+                    <li>LLM-planned API checks from VerificationPlan</li>
+                    <li>Response assertions: status code, JSON path values, header presence</li>
+                    <li>Record request/response in RunResult (redact secrets)</li>
+                </ul>
+                <p><strong>Exit criteria:</strong> API layer runs against a live local API and reports pass/fail per check.</p>
+            </div>
+        </div>
+
+        <div class="phase">
+            <div class="phase-header">
+                <h4>Phase 5 — LLM Test Planner</h4>
+                <span class="phase-id">P5</span>
+            </div>
+            <div class="phase-body">
+                <p class="deps">Dependencies: P1</p>
+                <ul class="checklist">
+                    <li>Provider adapter interface + OpenAI and Anthropic implementations</li>
+                    <li>Prompt template: AC markdown + AGENTS.md + evalforge.yaml → VerificationPlan JSON</li>
+                    <li>Schema validation of LLM output; retry on malformed JSON</li>
+                    <li><code>evalforge plan</code> command outputs plan without executing</li>
+                    <li>Gap analysis section in plan output</li>
+                </ul>
+                <p><strong>Exit criteria:</strong> Given sample AC markdown, planner produces valid VerificationPlan mapping criteria to terminal, API, and UI layers.</p>
+            </div>
+        </div>
+
+        <div class="phase">
+            <div class="phase-header">
+                <h4>Phase 6 — Computer-Use Spike (Linux)</h4>
+                <span class="phase-id">P6</span>
+            </div>
+            <div class="phase-body">
+                <p class="deps">Dependencies: P5</p>
+                <ul class="checklist">
+                    <li>Implement ScreenshotDriver, AccessibilityDriver, InputDriver for Linux</li>
+                    <li>Single-scenario proof: "open browser to URL, verify page title visible"</li>
+                    <li>Compare Approach A vs B (custom vs vendor API) — document decision</li>
+                    <li>Per-step screenshot saved with timestamp and action metadata</li>
+                    <li>Enforce max 4 retries per action (Cursor parity)</li>
+                </ul>
+                <p><strong>Exit criteria:</strong> One UI scenario from VerificationPlan executes end-to-end on Linux VM with screenshot evidence.</p>
+            </div>
+        </div>
+
+        <div class="phase">
+            <div class="phase-header">
+                <h4>Phase 7 — Evidence Recorder &amp; Gap Analyzer</h4>
+                <span class="phase-id">P7</span>
+            </div>
+            <div class="phase-body">
+                <p class="deps">Dependencies: P3, P4, P6</p>
+                <ul class="checklist">
+                    <li>Full-desktop FFmpeg video recording for entire run</li>
+                    <li>Artifact directory structure: <code>.evalforge/runs/&lt;run_id&gt;/</code></li>
+                    <li>Sync video timestamps to UI step markers</li>
+                    <li>Gap analyzer: merge planner gaps + runtime failures + policy exclusions</li>
+                    <li>RunResult JSON as canonical machine output</li>
+                </ul>
+                <p><strong>Exit criteria:</strong> Full run produces video + screenshots + RunResult JSON matching schema.</p>
+            </div>
+        </div>
+
+        <div class="phase">
+            <div class="phase-header">
+                <h4>Phase 8 — HTML Report Generator</h4>
+                <span class="phase-id">P8</span>
+            </div>
+            <div class="phase-body">
+                <p class="deps">Dependencies: P7</p>
+                <ul class="checklist">
+                    <li>Jinja2 template: summary header, per-layer sections, embedded screenshots</li>
+                    <li>Video player embed (or link) for desktop recording</li>
+                    <li>Terminal output collapsible blocks with syntax highlighting</li>
+                    <li>Gap report section styled prominently</li>
+                    <li>Cursor-parity layout: status badge, test counts, evidence gallery, logs</li>
+                </ul>
+                <p><strong>Exit criteria:</strong> HTML report is self-contained and viewable in browser; matches Cursor PR artifact information density.</p>
+            </div>
+        </div>
+
+        <div class="phase">
+            <div class="phase-header">
+                <h4>Phase 9 — Slack Bot Reporter</h4>
+                <span class="phase-id">P9</span>
+            </div>
+            <div class="phase-body">
+                <p class="deps">Dependencies: P8</p>
+                <ul class="checklist">
+                    <li>Slack bot token auth from secrets vault</li>
+                    <li>Summary message with pass/fail/partial status</li>
+                    <li>Upload screenshots and video via <code>files.upload</code> (or v2 API equivalent)</li>
+                    <li>Link to HTML report if hosted; else attach key screenshots inline</li>
+                    <li>Configurable channel per evalforge.yaml</li>
+                </ul>
+                <p><strong>Exit criteria:</strong> Run completion posts to Slack with video + screenshot attachments.</p>
+            </div>
+        </div>
+
+        <div class="phase">
+            <div class="phase-header">
+                <h4>Phase 10 — Full Orchestrator Integration</h4>
+                <span class="phase-id">P10</span>
+            </div>
+            <div class="phase-body">
+                <p class="deps">Dependencies: P2–P9</p>
+                <ul class="checklist">
+                    <li><code>evalforge run</code> executes full layer sequence: env → build → terminal → api → ui</li>
+                    <li>Policy: <code>fail_fast</code> vs collect-all-evidence modes</li>
+                    <li>CLI flags: <code>--layers</code>, <code>--skip-env</code>, <code>--plan-only</code>, <code>--no-slack</code></li>
+                    <li>Exit code 0 only when all executed layers pass</li>
+                    <li>End-to-end demo on a real repo (dogfood target TBD)</li>
+                </ul>
+                <p><strong>Exit criteria:</strong> Single command produces Cursor-parity evidence bundle from AC markdown input.</p>
+            </div>
+        </div>
+
+        <div class="phase">
+            <div class="phase-header">
+                <h4>Phase 11 — Windows Platform Support</h4>
+                <span class="phase-id">P11</span>
+            </div>
+            <div class="phase-body">
+                <p class="deps">Dependencies: P10</p>
+                <ul class="checklist">
+                    <li>Windows ScreenshotDriver, AccessibilityDriver (UIA), InputDriver (pywinauto)</li>
+                    <li>Native desktop app focus switching</li>
+                    <li>FFmpeg gdigrab video recording</li>
+                    <li>Platform auto-detect or <code>--platform windows</code> flag</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="phase">
+            <div class="phase-header">
+                <h4>Phase 12 — macOS Platform Support</h4>
+                <span class="phase-id">P12</span>
+            </div>
+            <div class="phase-body">
+                <p class="deps">Dependencies: P10</p>
+                <ul class="checklist">
+                    <li>macOS AX API drivers</li>
+                    <li>Permissions handling (Screen Recording, Accessibility)</li>
+                    <li>FFmpeg avfoundation video</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. CLI -->
+    <div class="section">
+        <div class="section-header">
+            <div class="num purple">9</div>
+            <h2>CLI Interface</h2>
+        </div>
+
+        <pre><code><span class="cm"># Validate repo config</span>
+evalforge validate-config --repo /path/to/target
+
+<span class="cm"># Generate verification plan from acceptance criteria (no execution)</span>
+evalforge plan --repo /path/to/target --acceptance acceptance.md
+
+<span class="cm"># Run specific layers</span>
+evalforge run --repo /path/to/target --acceptance acceptance.md --layers env,build,terminal
+
+<span class="cm"># Full verification run</span>
+evalforge run --repo /path/to/target --acceptance acceptance.md --branch feature/x
+
+<span class="cm"># Environment management only</span>
+evalforge env up --repo /path/to/target
+evalforge env down --repo /path/to/target
+
+<span class="cm"># Accept AC from stdin (e.g. pasted PR body)</span>
+gh pr view 123 --json body -q .body | evalforge run --repo . --acceptance-stdin</code></pre>
+    </div>
+
+    <!-- 10. SLACK -->
+    <div class="section">
+        <div class="section-header">
+            <div class="num orange">10</div>
+            <h2>Slack Evidence Delivery</h2>
+        </div>
+
+        <h3>10.1 Message structure</h3>
+        <ol>
+            <li><strong>Header</strong> — ✅/❌/⚠️ status, repo name, branch, run ID, duration</li>
+            <li><strong>Summary blocks</strong> — per-layer pass/fail with counts (e.g. "138 tests passed")</li>
+            <li><strong>Gap warning</strong> — bullet list of untested items</li>
+            <li><strong>Attachments</strong> — desktop video (WebM), key screenshots (first, last, failures)</li>
+            <li><strong>Footer</strong> — link to full HTML report path on VM or hosted URL</li>
+        </ol>
+
+        <h3>10.2 Setup requirements</h3>
+        <ul>
+            <li>Slack app with <code>files:write</code>, <code>chat:write</code> scopes</li>
+            <li>Bot token stored in secrets vault</li>
+            <li>Channel ID in evalforge.yaml</li>
+        </ul>
+    </div>
+
+    <!-- 11. RISKS -->
+    <div class="section">
+        <div class="section-header">
+            <div class="num red">11</div>
+            <h2>Risks &amp; Mitigations</h2>
+        </div>
+        <table>
+            <tr><th>Risk</th><th>Impact</th><th>Mitigation</th></tr>
+            <tr>
+                <td>LLM derives incorrect test steps from AC</td>
+                <td>False pass or wrong coverage</td>
+                <td><code>evalforge plan</code> dry-run review; schema constraints; require terminal commands from evalforge.yaml for critical suites</td>
+            </tr>
+            <tr>
+                <td>Computer-use flakiness (timing, resolution)</td>
+                <td>Unreliable UI layer</td>
+                <td>Fixed resolution; wait conditions; max 4 retries; per-step screenshots for debugging</td>
+            </tr>
+            <tr>
+                <td>Wayland vs X11 input differences on Linux</td>
+                <td>Input driver breaks on some VMs</td>
+                <td>Detect session type; document VM setup; support both xdotool and ydotool</td>
+            </tr>
+            <tr>
+                <td>Native desktop app a11y varies by toolkit</td>
+                <td>Incomplete UI tree</td>
+                <td>Fall back to vision-only (screenshot + coordinate click) when a11y sparse</td>
+            </tr>
+            <tr>
+                <td>LLM cost per run</td>
+                <td>Expensive at scale</td>
+                <td>Cache VerificationPlan; use smaller model for action loop; BYO provider choice</td>
+            </tr>
+            <tr>
+                <td>Secrets exposure in logs/reports</td>
+                <td>Security incident</td>
+                <td>Redact secrets in all output; never embed tokens in HTML/Slack</td>
+            </tr>
+            <tr>
+                <td>environment.json format changes</td>
+                <td>Parser breaks</td>
+                <td>Version field check; loose parsing; fallback to evalforge.yaml services</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- 12. FUTURE -->
+    <div class="section">
+        <div class="section-header">
+            <div class="num cyan">12</div>
+            <h2>Future Extensions (Not in Initial Plan)</h2>
+        </div>
+        <p>Documented for awareness — implement only after P10 is stable:</p>
+        <ul>
+            <li>GitHub PR webhook trigger and check-run API integration</li>
+            <li>CI gate mode (exit code blocks merge)</li>
+            <li>Plan approval gate (human reviews LLM plan before execution)</li>
+            <li>Cached selector maps from first computer-use run → faster replay</li>
+            <li>Remote worker daemon for SSH-triggered runs</li>
+            <li>VM pool scheduler for parallel runs</li>
+            <li>OAuth manual checkpoint pause/resume</li>
+        </ul>
+    </div>
+
+</div>
+
+<footer>
+    <p>EvalForge — Cursor Cloud Agent Testing Mirror — Implementation Plan</p>
+    <p>Generated from requirements session — June 20, 2026</p>
+</footer>
+
+</body>
+</html>
