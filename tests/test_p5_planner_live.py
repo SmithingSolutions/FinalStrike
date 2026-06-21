@@ -7,7 +7,13 @@ import pytest
 from finalstrike.config.context import load_repo_context
 from finalstrike.fixture_capabilities import load_capabilities
 from finalstrike.planner.planner import generate_verification_plan
-from tests.conftest import ACCEPTANCE_FILE, ACCEPTANCE_SMOKE, FIXTURE_REPO, ollama_available
+from tests.conftest import (
+    ACCEPTANCE_FILE,
+    ACCEPTANCE_SMOKE,
+    FIXTURE_REPO,
+    live_llm_available,
+    live_llm_skip_reason,
+)
 from tests.support.llm_cassette import (
     DEFAULT_SMOKE_CASSETTE_ID,
     ReplayCassetteProvider,
@@ -22,10 +28,10 @@ from tests.support.plan_assertions import (
 )
 
 
-@pytest.mark.requires_ollama
+@pytest.mark.requires_live_llm
 def test_generate_verification_plan_live_structural() -> None:
-    if not ollama_available():
-        pytest.skip("Ollama not available")
+    if not live_llm_available():
+        pytest.skip(live_llm_skip_reason())
 
     context = load_repo_context(
         FIXTURE_REPO,
@@ -42,13 +48,13 @@ def test_generate_verification_plan_live_structural() -> None:
     assert_plan_covers_capabilities(plan, capabilities)
 
 
-@pytest.mark.requires_ollama
+@pytest.mark.requires_live_llm
 def test_record_smoke_planner_cassette() -> None:
     """Re-record smoke-v1 cassette when FINALSTRIKE_RECORD_LLM=1."""
     if not should_record_llm():
         pytest.skip("Set FINALSTRIKE_RECORD_LLM=1 to refresh cassettes")
-    if not ollama_available():
-        pytest.skip("Ollama not available")
+    if not live_llm_available():
+        pytest.skip(live_llm_skip_reason())
 
     context = load_repo_context(
         FIXTURE_REPO,
