@@ -4,11 +4,11 @@
   "terminals": [
     {
       "name": "api",
-      "command": "python -m sample_app.server"
+      "command": "python3 -m sample_app.server"
     },
     {
       "name": "frontend",
-      "command": "python -m http.server 3000 --directory static"
+      "command": "python3 -m http.server 3000 --directory static"
     }
   ]
 }

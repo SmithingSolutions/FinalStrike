@@ -13,12 +13,17 @@ from rich.console import Console
 from evalforge import __version__
 from evalforge.config.context import load_repo_context
 from evalforge.config.loader import format_validation_error, load_config
+from evalforge.config.models import LayerStatus
+from evalforge.env.orchestrator import EnvOrchestrator
+from evalforge.orchestrator.run import execute_run, format_run_result_json, parse_layers
 
 app = typer.Typer(
     name="evalforge",
     help="Cursor cloud agent testing mirror — orchestrator and evidence recorder.",
     no_args_is_help=True,
 )
+env_app = typer.Typer(help="Manage target repo environment (install, terminals).")
+app.add_typer(env_app, name="env")
 console = Console(stderr=True)
 
 
@@ -175,3 +180,204 @@ def plan(
         "showing merged context."
     )
     typer.echo(context.format_dry_run())
+
+
+def _load_context_or_exit(
+    repo: Path,
+    *,
+    acceptance: Path | None = None,
+    acceptance_stdin: bool = False,
+    require_acceptance: bool = False,
+):
+    if not repo.exists():
+        console.print(f"[red]Error:[/red] Repo path does not exist: {repo}")
+        raise typer.Exit(code=1)
+
+    if require_acceptance:
+        if acceptance is not None and acceptance_stdin:
+            console.print(
+                "[red]Error:[/red] Use only one of --acceptance or --acceptance-stdin."
+            )
+            raise typer.Exit(code=1)
+        if acceptance is None and not acceptance_stdin:
+            console.print(
+                "[red]Error:[/red] Provide --acceptance FILE or --acceptance-stdin."
+            )
+            raise typer.Exit(code=1)
+
+    try:
+        return load_repo_context(
+            repo,
+            acceptance_path=acceptance,
+            acceptance_stdin=acceptance_stdin,
+            inject_secrets=True,
+        )
+    except FileNotFoundError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    except NotADirectoryError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    except yaml.YAMLError as exc:
+        console.print(f"[red]YAML parse error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    except ValidationError as exc:
+        console.print(f"[red]{format_validation_error(exc)}[/red]")
+        raise typer.Exit(code=1) from exc
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+
+@env_app.command("up")
+def env_up(
+    repo: Annotated[
+        Path,
+        typer.Option(
+            "--repo",
+            "-r",
+            help="Path to the target repository.",
+            file_okay=False,
+            dir_okay=True,
+            resolve_path=True,
+        ),
+    ],
+    health_timeout: Annotated[
+        float,
+        typer.Option(
+            "--health-timeout",
+            help="Seconds to wait for API health checks.",
+        ),
+    ] = 60.0,
+) -> None:
+    """Install deps, start terminals, and wait for health checks."""
+    context = _load_context_or_exit(repo)
+    orchestrator = EnvOrchestrator(
+        repo=context.repo,
+        environment=context.environment,
+        config=context.config,
+        subprocess_env=context.subprocess_env,
+        health_timeout=health_timeout,
+    )
+    result = orchestrator.up()
+    if result.status == LayerStatus.SKIPPED:
+        console.print("[yellow]Environment bootstrap skipped[/yellow] (no environment.json).")
+        raise typer.Exit(code=0)
+    if result.status == LayerStatus.FAILED:
+        console.print("[red]Environment bootstrap failed[/red]")
+        if result.logs:
+            console.print(result.logs)
+        raise typer.Exit(code=1)
+
+    console.print(
+        f"[green]✓[/green] Environment ready "
+        f"({result.duration_ms}ms, processes running — use `evalforge env down` to stop)"
+    )
+
+
+@env_app.command("down")
+def env_down(
+    repo: Annotated[
+        Path,
+        typer.Option(
+            "--repo",
+            "-r",
+            help="Path to the target repository.",
+            file_okay=False,
+            dir_okay=True,
+            resolve_path=True,
+        ),
+    ],
+) -> None:
+    """Stop background terminals started by `env up`."""
+    context = _load_context_or_exit(repo)
+    orchestrator = EnvOrchestrator(
+        repo=context.repo,
+        environment=context.environment,
+        config=context.config,
+        subprocess_env=context.subprocess_env,
+    )
+    messages = orchestrator.down()
+    if messages:
+        for message in messages:
+            console.print(message)
+    else:
+        console.print("No running environment processes found.")
+    console.print("[green]✓[/green] Environment stopped.")
+
+
+@app.command("run")
+def run(
+    repo: Annotated[
+        Path,
+        typer.Option(
+            "--repo",
+            "-r",
+            help="Path to the target repository containing evalforge.yaml.",
+            file_okay=False,
+            dir_okay=True,
+            resolve_path=True,
+        ),
+    ],
+    acceptance: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--acceptance",
+            "-a",
+            help="Path to acceptance criteria markdown file.",
+            file_okay=True,
+            dir_okay=False,
+            resolve_path=True,
+        ),
+    ] = None,
+    acceptance_stdin: Annotated[
+        bool,
+        typer.Option(
+            "--acceptance-stdin",
+            help="Read acceptance criteria from stdin.",
+        ),
+    ] = False,
+    layers: Annotated[
+        Optional[str],
+        typer.Option(
+            "--layers",
+            help="Comma-separated layers to run: env,build,terminal.",
+        ),
+    ] = None,
+    branch: Annotated[
+        Optional[str],
+        typer.Option(
+            "--branch",
+            help="Branch name for report metadata only (no git checkout).",
+        ),
+    ] = None,
+    health_timeout: Annotated[
+        float,
+        typer.Option(
+            "--health-timeout",
+            help="Seconds to wait for API health checks when env layer runs.",
+        ),
+    ] = 60.0,
+) -> None:
+    """Execute verification layers and emit RunResult JSON."""
+    context = _load_context_or_exit(
+        repo,
+        acceptance=acceptance,
+        acceptance_stdin=acceptance_stdin,
+        require_acceptance=True,
+    )
+    try:
+        selected_layers = parse_layers(layers)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    result = execute_run(
+        context,
+        layers=selected_layers,
+        branch=branch,
+        health_timeout=health_timeout,
+    )
+    typer.echo(format_run_result_json(result))
+    if result.status.value == "failed":
+        raise typer.Exit(code=1)

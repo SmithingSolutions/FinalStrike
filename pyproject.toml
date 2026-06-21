@@ -32,3 +32,6 @@ packages = ["evalforge"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "integration: tests that start real services or network listeners",
+]
