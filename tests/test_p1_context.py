@@ -65,7 +65,7 @@ def test_load_environment_sample_app() -> None:
     assert env.install == "pip install -r requirements.txt"
     assert len(env.terminals) == 2
     assert env.terminals[0].name == "api"
-    assert env.terminals[0].command == "python -m sample_app.server"
+    assert env.terminals[0].command == "python3 -m sample_app.server"
     assert env.terminals[1].name == "frontend"
     summary = env.summary_lines()
     assert any("install:" in line for line in summary)

@@ -97,6 +97,7 @@ class PolicyConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     fail_fast: bool = False
+    max_test_retries: int = 0
     max_ui_steps: int = 40
     max_ui_retries: int = 4
 

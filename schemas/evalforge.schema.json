@@ -143,6 +143,11 @@
           "title": "Fail Fast",
           "type": "boolean"
         },
+        "max_test_retries": {
+          "default": 0,
+          "title": "Max Test Retries",
+          "type": "integer"
+        },
         "max_ui_steps": {
           "default": 40,
           "title": "Max Ui Steps",
