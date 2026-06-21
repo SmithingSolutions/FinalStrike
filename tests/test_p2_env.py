@@ -21,8 +21,7 @@ from finalstrike.env.health import wait_for_health
 from finalstrike.env.orchestrator import EnvOrchestrator
 from finalstrike.env.state import load_env_state
 
-FIXTURE_REPO = Path(__file__).resolve().parents[1] / "fixtures" / "sample-app"
-ACCEPTANCE_FILE = FIXTURE_REPO / "acceptance.md"
+from tests.conftest import ACCEPTANCE_FILE, FIXTURE_REPO
 runner = CliRunner()
 
 

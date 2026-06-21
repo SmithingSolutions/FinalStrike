@@ -22,3 +22,4 @@ Minimal API + static frontend used for FinalStrike integration testing.
 
 - No authentication (intentional for fixture simplicity)
 - No live third-party API integrations
+- Task-list feature from `acceptance-full.md` is **planned** — see `capabilities.yaml`

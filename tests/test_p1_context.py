@@ -22,8 +22,7 @@ from finalstrike.config.secrets import (
     redact_secrets,
 )
 
-FIXTURE_REPO = Path(__file__).resolve().parents[1] / "fixtures" / "sample-app"
-ACCEPTANCE_FILE = FIXTURE_REPO / "acceptance.md"
+from tests.conftest import ACCEPTANCE_FILE, ACCEPTANCE_FULL, ACCEPTANCE_SMOKE, FIXTURE_REPO
 runner = CliRunner()
 
 
@@ -179,9 +178,9 @@ def test_apply_to_environ_merges_without_mutating_os_environ() -> None:
 
 
 def test_load_acceptance_from_file() -> None:
-    ac = load_acceptance(ACCEPTANCE_FILE)
-    assert "Task list" in ac.content
-    assert ac.source.endswith("acceptance.md")
+    ac = load_acceptance(ACCEPTANCE_SMOKE)
+    assert "smoke verification" in ac.content
+    assert ac.source.endswith("acceptance-smoke.md")
 
 
 def test_load_acceptance_missing_file(tmp_path: Path) -> None:
@@ -218,6 +217,12 @@ def test_load_repo_context_sample_app() -> None:
     assert ctx.environment.present is True
     assert "OPENAI_API_KEY" in ctx.secrets
     assert ctx.acceptance is not None
+    assert "smoke verification" in ctx.acceptance.content
+
+
+def test_load_repo_context_full_acceptance() -> None:
+    ctx = load_repo_context(FIXTURE_REPO, acceptance_path=ACCEPTANCE_FULL)
+    assert ctx.acceptance is not None
     assert "Task list" in ctx.acceptance.content
 
 
@@ -250,7 +255,7 @@ def test_planner_context_block_uses_agents_context_block() -> None:
     block = ctx.planner_context_block()
     assert ctx.agents.to_context_block().strip() in block
     assert "Acceptance Criteria" in block
-    assert "Task list" in block
+    assert "smoke verification" in block
 
 
 def test_repo_context_redacts_secrets_in_dry_run() -> None:
@@ -260,7 +265,7 @@ def test_repo_context_redacts_secrets_in_dry_run() -> None:
     assert "fixture-slack-token" not in output
     assert "OPENAI_API_KEY: ***" in output
     assert "sample-app" in output
-    assert "Task list" in output
+    assert "smoke verification" in output
     assert "Planner Context" in output
     assert ctx.agents.to_context_block().strip() in output
     assert "pip install -r requirements.txt" in output
@@ -292,7 +297,7 @@ def test_plan_dry_run_sample_app() -> None:
     assert result.exit_code == 0
     assert "FinalStrike Plan Context" in result.stdout
     assert "sample-app" in result.stdout
-    assert "Task list" in result.stdout
+    assert "smoke verification" in result.stdout
     assert "fixture-test-key-not-real" not in result.stdout
     assert "OPENAI_API_KEY: ***" in result.stdout
 

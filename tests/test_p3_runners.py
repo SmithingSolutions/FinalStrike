@@ -17,8 +17,7 @@ from finalstrike.runners.build import run_build_layer
 from finalstrike.runners.pytest_parser import parse_pytest_output
 from finalstrike.runners.terminal import run_terminal_layer
 
-FIXTURE_REPO = Path(__file__).resolve().parents[1] / "fixtures" / "sample-app"
-ACCEPTANCE_FILE = FIXTURE_REPO / "acceptance.md"
+from tests.conftest import ACCEPTANCE_FILE, FIXTURE_REPO
 runner = CliRunner()
 
 

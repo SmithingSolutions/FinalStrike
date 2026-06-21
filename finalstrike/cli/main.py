@@ -15,6 +15,7 @@ from finalstrike.config.context import load_repo_context
 from finalstrike.config.loader import format_validation_error, load_config
 from finalstrike.config.models import LayerStatus
 from finalstrike.env.orchestrator import EnvOrchestrator
+from finalstrike.doctor import CheckStatus, doctor_exit_code, run_doctor_checks
 from finalstrike.orchestrator.run import execute_run, format_run_result_json, parse_layers
 
 app = typer.Typer(
@@ -47,6 +48,56 @@ def main(
     ] = None,
 ) -> None:
     """FinalStrike CLI."""
+
+
+_STATUS_STYLE = {
+    CheckStatus.OK: "green",
+    CheckStatus.WARN: "yellow",
+    CheckStatus.FAIL: "red",
+    CheckStatus.SKIP: "dim",
+}
+
+_STATUS_LABEL = {
+    CheckStatus.OK: "ok",
+    CheckStatus.WARN: "warn",
+    CheckStatus.FAIL: "fail",
+    CheckStatus.SKIP: "skip",
+}
+
+
+@app.command("doctor")
+def doctor(
+    repo: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--repo",
+            "-r",
+            help="Fixture repo for capabilities and secrets checks.",
+            file_okay=False,
+            dir_okay=True,
+            resolve_path=True,
+        ),
+    ] = None,
+) -> None:
+    """Pre-flight checks for secrets, PATH, fixture gaps, and P5+ dependencies."""
+    from rich.table import Table
+
+    checks = run_doctor_checks(repo=repo)
+    table = Table(title="FinalStrike doctor", show_header=True, header_style="bold")
+    table.add_column("Check")
+    table.add_column("Status")
+    table.add_column("Detail")
+
+    for check in checks:
+        style = _STATUS_STYLE[check.status]
+        label = _STATUS_LABEL[check.status]
+        table.add_row(check.name, f"[{style}]{label}[/{style}]", check.detail)
+
+    console.print(table)
+    console.print(
+        "\nSee docs/PHASE_GAPS.md for gap registry and per-phase pre-flight steps."
+    )
+    raise typer.Exit(code=doctor_exit_code(checks))
 
 
 @app.command("validate-config")

@@ -52,7 +52,7 @@ With the venv activated, try the CLI:
 finalstrike validate-config --repo fixtures/sample-app
 
 # Dry-run plan: merged config + acceptance criteria (no LLM yet)
-finalstrike plan --repo fixtures/sample-app --acceptance fixtures/sample-app/acceptance.md --dry-run
+finalstrike plan --repo fixtures/sample-app --acceptance fixtures/sample-app/acceptance-smoke.md --dry-run
 
 # Start fixture services (install + terminals + health check)
 finalstrike env up --repo fixtures/sample-app
@@ -60,7 +60,7 @@ finalstrike env down --repo fixtures/sample-app
 
 # Run build + terminal layers; prints RunResult JSON
 finalstrike run --repo fixtures/sample-app \
-  --acceptance fixtures/sample-app/acceptance.md \
+  --acceptance fixtures/sample-app/acceptance-smoke.md \
   --layers build,terminal
 
 # Accept criteria from stdin (e.g. piped PR body)
@@ -104,6 +104,8 @@ PLAN.html           # Implementation plan
 **Phase 2 (P2)** — environment orchestrator: `finalstrike env up/down`, install/terminals from `environment.json`, HTTP health polling, process teardown.
 
 **Phase 3 (P3)** — build/lint and terminal test runners: `finalstrike run --layers`, pytest output parsing, `RunResult` JSON written under `.finalstrike/runs/`.
+
+**Gap guardrails** — `finalstrike doctor`, `docs/PHASE_GAPS.md`, `acceptance-smoke.md` / `acceptance-full.md`, and `capabilities.yaml` keep P4+ prerequisites visible.
 
 See [PLAN.html](PLAN.html) section 8 for the full phase roadmap.
 

@@ -1,0 +1,27 @@
+# Machine-readable map of what sample-app implements vs what acceptance-full.md
+# targets. Update `implemented` when extending the fixture; remove matching items
+# from `planned` when done. Guardrail tests in tests/test_phase_guardrails.py
+# enforce consistency.
+version: "1"
+
+implemented:
+  api:
+    - method: GET
+      path: /health
+      expect_status: 200
+  ui:
+    - route: /
+      title: Sample App
+  terminal:
+    - command: pytest -q
+
+planned:
+  api:
+    - method: POST
+      path: /api/tasks
+      expect_status: 201
+  ui:
+    - route: /tasks
+      description: Tasks page with list and New Task form
+    - action: create_task
+      description: Fill title and description, save, see task in list

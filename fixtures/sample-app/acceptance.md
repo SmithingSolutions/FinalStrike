@@ -1,8 +1,8 @@
-## Feature: Task list
+# Acceptance criteria (fixture index)
 
-### Acceptance Criteria
+| File | Use when | Fixture support |
+|------|----------|-----------------|
+| [acceptance-smoke.md](acceptance-smoke.md) | P0–P4 CLI runs and integration tests | **Implemented** — matches `capabilities.yaml` `implemented` |
+| [acceptance-full.md](acceptance-full.md) | P5+ LLM planner and P6 UI demos | **Planned** — see `capabilities.yaml` `planned` |
 
-- User can open the Tasks page and see the task list
-- User can click "New Task", fill title and description, and save
-- New task appears in the list with correct title
-- API returns 201 on POST /api/tasks with valid payload
+**Default for tests and CLI examples:** `acceptance-smoke.md`.
