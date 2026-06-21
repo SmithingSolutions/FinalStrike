@@ -2,15 +2,10 @@
 
 from __future__ import annotations
 
-import os
 import shutil
-import socket
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from urllib.parse import urlparse
-
-import httpx
 
 from finalstrike.fixture_capabilities import (
     count_planned_items,
@@ -38,23 +33,6 @@ class DoctorCheck:
     status: CheckStatus
     detail: str
     phase: int | None = None
-
-
-def _tcp_reachable(host: str, port: int, timeout: float = 1.0) -> bool:
-    try:
-        with socket.create_connection((host, port), timeout=timeout):
-            return True
-    except OSError:
-        return False
-
-
-def _http_reachable(url: str, timeout: float = 1.0) -> bool:
-    try:
-        with httpx.Client(timeout=timeout) as client:
-            response = client.get(url)
-            return response.status_code < 500
-    except httpx.HTTPError:
-        return False
 
 
 def run_doctor_checks(
@@ -225,34 +203,26 @@ def _fixture_checks(repo: Path) -> list[DoctorCheck]:
 
 
 def _optional_phase_checks(repo: Path | None = None) -> list[DoctorCheck]:
+    from finalstrike.providers.live import assess_live_llm
+
     checks: list[DoctorCheck] = []
 
-    ollama_url = "http://localhost:11434/v1/models"
-    if _http_reachable(ollama_url):
+    if repo is not None:
+        llm_status = assess_live_llm(repo)
         checks.append(
             DoctorCheck(
-                name="Ollama (P5)",
-                status=CheckStatus.OK,
-                detail=ollama_url,
+                name="Live LLM (P5)",
+                status=CheckStatus.OK if llm_status.ready else CheckStatus.SKIP,
+                detail=llm_status.detail,
                 phase=5,
             )
         )
     else:
         checks.append(
             DoctorCheck(
-                name="Ollama (P5)",
+                name="Live LLM (P5)",
                 status=CheckStatus.SKIP,
-                detail="Not reachable — @requires_ollama tests will skip",
-                phase=5,
-            )
-        )
-
-    if os.environ.get("OPENAI_API_KEY"):
-        checks.append(
-            DoctorCheck(
-                name="OPENAI_API_KEY (P5)",
-                status=CheckStatus.OK,
-                detail="Set in environment",
+                detail="Pass --repo to check configured llm.base_url",
                 phase=5,
             )
         )
@@ -282,49 +252,7 @@ def _optional_phase_checks(repo: Path | None = None) -> list[DoctorCheck]:
                 )
             )
 
-    if repo is not None:
-        llm_base = _read_llm_base_url(repo)
-        if llm_base:
-            parsed = urlparse(llm_base)
-            host = parsed.hostname or "localhost"
-            port = parsed.port or (443 if parsed.scheme == "https" else 80)
-            if _tcp_reachable(host, port):
-                checks.append(
-                    DoctorCheck(
-                        name="LLM base_url TCP",
-                        status=CheckStatus.OK,
-                        detail=f"{llm_base} reachable",
-                        phase=5,
-                    )
-                )
-            else:
-                checks.append(
-                    DoctorCheck(
-                        name="LLM base_url TCP",
-                        status=CheckStatus.WARN,
-                        detail=f"{llm_base} not reachable (planner integration)",
-                        phase=5,
-                    )
-                )
-
     return checks
-
-
-def _read_llm_base_url(repo: Path) -> str | None:
-    config_path = repo / "finalstrike.yaml"
-    if not config_path.is_file():
-        return None
-    import yaml
-
-    with config_path.open(encoding="utf-8") as handle:
-        data = yaml.safe_load(handle)
-    if not isinstance(data, dict):
-        return None
-    llm = data.get("llm")
-    if not isinstance(llm, dict):
-        return None
-    base_url = llm.get("base_url")
-    return base_url if isinstance(base_url, str) else None
 
 
 def doctor_exit_code(checks: list[DoctorCheck]) -> int:

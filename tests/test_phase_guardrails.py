@@ -17,7 +17,7 @@ from tests.conftest import (
     ACCEPTANCE_FULL,
     ACCEPTANCE_SMOKE,
     FIXTURE_REPO,
-    ollama_available,
+    live_llm_available,
 )
 
 runner = CliRunner()
@@ -94,7 +94,7 @@ def test_smoke_planner_cassette_present() -> None:
     assert cassette.canonical_plan["scenarios"]
 
 
-@pytest.mark.requires_ollama
-def test_ollama_marker_skips_when_unavailable() -> None:
-    """Placeholder for P5 integration tests; skipped unless Ollama is running."""
-    assert ollama_available()
+@pytest.mark.requires_live_llm
+def test_live_llm_marker_skips_when_unavailable() -> None:
+    """Placeholder for P5 integration tests; skipped unless configured LLM is reachable."""
+    assert live_llm_available()

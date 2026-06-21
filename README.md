@@ -54,7 +54,7 @@ finalstrike validate-config --repo fixtures/sample-app
 # Dry-run plan: merged config + acceptance criteria (no LLM yet)
 finalstrike plan --repo fixtures/sample-app --acceptance fixtures/sample-app/acceptance-smoke.md --dry-run
 
-# Live plan: LLM produces VerificationPlan JSON (needs Ollama or OPENAI_API_KEY)
+# Live plan: LLM produces VerificationPlan JSON (needs configured llm.base_url + OPENAI_API_KEY)
 finalstrike plan --repo fixtures/sample-app --acceptance fixtures/sample-app/acceptance-smoke.md --no-dry-run
 
 # Start fixture services (install + terminals + health check)

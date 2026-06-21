@@ -22,7 +22,7 @@ from finalstrike.providers.openai_compat import (
     OpenAICompatProvider,
     resolve_api_key,
 )
-from tests.conftest import ACCEPTANCE_FILE, FIXTURE_REPO
+from tests.conftest import ACCEPTANCE_FILE, FIXTURE_REPO, live_llm_available
 
 runner = CliRunner()
 
@@ -268,7 +268,7 @@ def test_openai_compat_provider_from_context() -> None:
     assert provider.config.model == "llama3"
 
 
-@pytest.mark.requires_ollama
-def test_ollama_marker_skips_when_unavailable() -> None:
-    """Placeholder for live planner tests; skipped unless Ollama is running."""
-    assert ollama_available()
+@pytest.mark.requires_live_llm
+def test_live_llm_marker_skips_when_unavailable() -> None:
+    """Placeholder for live planner tests; skipped unless configured LLM is reachable."""
+    assert live_llm_available()

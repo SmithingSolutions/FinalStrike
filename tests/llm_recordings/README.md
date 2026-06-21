@@ -18,16 +18,16 @@ llm_recordings/
 
 ## Default CI
 
-Cassette replay tests run in the normal `pytest -q` suite — no Ollama required.
+Cassette replay tests run in the normal `pytest -q` suite — no live LLM required.
 
 ## Refresh a cassette (after prompt or acceptance changes)
 
 When `assert_cassette_matches_context` fails, re-record from a machine with
-Ollama (or another configured LLM) running:
+the configured LLM endpoint reachable (`finalstrike.yaml` + secrets):
 
 ```bash
 export FINALSTRIKE_RECORD_LLM=1
-pytest -m requires_ollama tests/test_p5_planner_live.py::test_record_smoke_planner_cassette -q
+pytest -m requires_live_llm tests/test_p5_planner_live.py::test_record_smoke_planner_cassette -q
 pytest tests/test_p5_planner_integration.py -q
 git add tests/llm_recordings/
 ```
@@ -35,7 +35,7 @@ git add tests/llm_recordings/
 ## Live structural checks (optional)
 
 ```bash
-pytest -m requires_ollama tests/test_p5_planner_live.py -q
+pytest -m requires_live_llm tests/test_p5_planner_live.py -q
 ```
 
 Live tests assert **structure** (acceptance + `capabilities.yaml` coverage),

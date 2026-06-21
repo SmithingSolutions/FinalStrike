@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import shutil
-import socket
 from pathlib import Path
 
-import httpx
 import pytest
+
+from finalstrike.providers.live import assess_live_llm
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_REPO = WORKSPACE_ROOT / "fixtures" / "sample-app"
@@ -17,21 +17,14 @@ ACCEPTANCE_FULL = FIXTURE_REPO / "acceptance-full.md"
 ACCEPTANCE_FILE = ACCEPTANCE_SMOKE
 
 
-def _tcp_reachable(host: str, port: int, timeout: float = 1.0) -> bool:
-    try:
-        with socket.create_connection((host, port), timeout=timeout):
-            return True
-    except OSError:
-        return False
+def live_llm_available(repo: Path | None = None) -> bool:
+    target = repo or FIXTURE_REPO
+    return assess_live_llm(target).ready
 
 
-def ollama_available() -> bool:
-    try:
-        with httpx.Client(timeout=1.0) as client:
-            response = client.get("http://localhost:11434/v1/models")
-            return response.status_code < 500
-    except httpx.HTTPError:
-        return False
+def live_llm_skip_reason(repo: Path | None = None) -> str:
+    target = repo or FIXTURE_REPO
+    return assess_live_llm(target).detail
 
 
 def platform_tools_available() -> bool:
@@ -47,7 +40,7 @@ def pytest_configure(config: pytest.Config) -> None:
     )
     config.addinivalue_line(
         "markers",
-        "requires_ollama: needs Ollama at http://localhost:11434 (P5 planner integration)",
+        "requires_live_llm: needs configured llm.base_url reachable (P5 planner)",
     )
     config.addinivalue_line(
         "markers",
@@ -59,13 +52,14 @@ def pytest_collection_modifyitems(
     config: pytest.Config, items: list[pytest.Item]
 ) -> None:
     del config
-    if not ollama_available():
-        skip_ollama = pytest.mark.skip(
-            reason="Ollama not reachable at http://localhost:11434"
+    llm_status = assess_live_llm(FIXTURE_REPO)
+    if not llm_status.ready:
+        skip_live = pytest.mark.skip(
+            reason=f"Live LLM not available: {llm_status.detail}"
         )
         for item in items:
-            if "requires_ollama" in item.keywords:
-                item.add_marker(skip_ollama)
+            if "requires_live_llm" in item.keywords:
+                item.add_marker(skip_live)
 
     if not platform_tools_available():
         skip_platform = pytest.mark.skip(
