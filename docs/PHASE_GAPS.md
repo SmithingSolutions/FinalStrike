@@ -76,6 +76,9 @@ finalstrike computer-use run --repo fixtures/sample-app \
 Per-step screenshots are written under `.finalstrike/runs/<run_id>/screenshots/`.
 Full desktop video recording is deferred to P7.
 
+**Local E2E workflow** (GUI VM, `env up`, doctor checks, expected artifacts):
+[docs/LOCAL_SETUP.md § Testing computer-use locally](LOCAL_SETUP.md#testing-computer-use-locally-p6).
+
 See `docs/P6_APPROACH.md` for Approach A vs B notes and future host-app/plugin work.
 
 ## LLM planner (P5)

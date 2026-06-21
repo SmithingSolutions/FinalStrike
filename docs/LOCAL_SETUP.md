@@ -186,7 +186,104 @@ pytest -q
 Ensure `fixtures/sample-app/.finalstrike/secrets.env` exists with an
 `OPENAI_API_KEY` entry. The value may be your real API key.
 
-### Optional: live LLM or computer-use on a GUI VM
+## Testing computer-use locally (P6)
 
-Not required for default `pytest -q`. See `docs/PHASE_GAPS.md` and
-`docs/P6_APPROACH.md` for Chrome/Chromium, `xdotool`, and vision-model setup.
+Default `pytest -q` replays committed action cassettes and does **not** drive
+your desktop. To verify the real screenshot → vision LLM → OS input loop on a
+GUI VM, follow the steps below.
+
+### Prerequisites
+
+| Requirement | Why |
+|-------------|-----|
+| **GUI session** with `DISPLAY` set (X11) or Wayland | Screenshots and window focus need a real desktop |
+| **Google Chrome or Chromium** on `PATH` | `ui.browser: chromium` in `finalstrike.yaml` |
+| **xdotool** (X11) or **ydotool** (Wayland) | Mouse/keyboard automation |
+| **Vision-capable LLM** | Default fixture `llama3` via Ollama usually lacks image input — use `gpt-4o` or similar |
+| **Fixture frontend on port 3000** | Smoke UI opens `http://localhost:3000/` |
+
+Install platform tools on Debian/Ubuntu (once):
+
+```bash
+sudo apt update
+sudo apt install -y chromium-browser xdotool
+# or: google-chrome-stable, chromium, etc. — doctor checks the configured browser
+```
+
+Configure a vision model via gitignored overrides (see step 5 above). Example
+`fixtures/sample-app/finalstrike.local.yaml`:
+
+```yaml
+llm:
+  provider: openai_compat
+  base_url: [REDACTED]
+  model: gpt-4o
+```
+
+Optional: separate `computer_use.llm` block if the action model should differ
+from the planner model (see `finalstrike.local.yaml.example`).
+
+### End-to-end smoke run
+
+From the repository root with `.venv` activated:
+
+```bash
+# 1. Confirm platform + LLM readiness
+finalstrike doctor --repo fixtures/sample-app
+# Expect OK or SKIP only for optional tools you are not using (e.g. ydotool on X11).
+# Chrome/Chromium (P6), xdotool (P6), and Live LLM (P5) should be OK for a live run.
+
+# 2. Start fixture API + static frontend (port 3000)
+finalstrike env up --repo fixtures/sample-app
+
+# 3a. Ad-hoc instruction (simplest)
+finalstrike computer-use run --repo fixtures/sample-app \
+  --instruction 'Open http://localhost:3000/ and verify the page title is "Sample App"'
+
+# 3b. Or run the ac-2 UI step from a plan JSON
+finalstrike plan --repo fixtures/sample-app \
+  --acceptance fixtures/sample-app/acceptance-smoke.md --no-dry-run \
+  > /tmp/smoke-plan.json
+
+finalstrike computer-use run --repo fixtures/sample-app \
+  --plan /tmp/smoke-plan.json --scenario-id ac-2
+
+# 4. Stop services when finished
+finalstrike env down --repo fixtures/sample-app
+```
+
+### What success looks like
+
+- CLI prints `RunResult` JSON with `"status": "passed"` and exits **0**.
+- Evidence is written under
+  `fixtures/sample-app/.finalstrike/runs/<run_id>/`:
+  - `screenshots/step-000.png`, `step-001.png`, … — one per loop step
+  - `result.json` — full `RunResult` bundle
+
+A failed run exits **1**; inspect the last screenshots and stderr for the
+vision model's last action or a platform-tool error (missing browser, no
+`DISPLAY`, etc.).
+
+### Layered checks (without a live vision LLM)
+
+These run in CI and are useful before attempting a live desktop run:
+
+```bash
+source .venv/bin/activate
+
+# Unit tests — action parsing, loop logic, config (no GUI)
+pytest -q tests/test_p6_computer_use.py
+
+# Integration test — replays committed action cassette; needs xdotool + ffmpeg on PATH
+pytest -q tests/test_p6_computer_use_integration.py
+```
+
+The integration test uses fake screenshot/input drivers but still requires
+`xdotool` or `ydotool` and `ffmpeg` to be installed (see `@requires_platform_tools`
+in `tests/conftest.py`).
+
+### Further reading
+
+- `docs/P6_APPROACH.md` — design decisions and scope
+- `docs/PHASE_GAPS.md` — phase guardrails and cassette notes
+- `fixtures/sample-app/AGENTS.md` — fixture-specific commands

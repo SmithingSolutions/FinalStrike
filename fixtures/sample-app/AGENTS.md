@@ -17,8 +17,24 @@ Minimal API + static frontend used for FinalStrike integration testing.
 ## Computer-use (P6)
 
 UI verification requires **Google Chrome or Chromium** on the GUI VM (`ui.browser`
-in `finalstrike.yaml`). Run `finalstrike doctor --repo .` to confirm
-`Chrome/Chromium (P6)`.
+in `finalstrike.yaml`), **xdotool** (X11) or **ydotool** (Wayland), and a
+**vision-capable LLM**. Run `finalstrike doctor --repo .` to confirm
+`Chrome/Chromium (P6)` and input tools.
+
+Full step-by-step setup (platform packages, LLM overrides, evidence paths):
+**[docs/LOCAL_SETUP.md § Testing computer-use locally](../../docs/LOCAL_SETUP.md#testing-computer-use-locally-p6)**.
+
+```bash
+# Start API + frontend (frontend serves static/ on port 3000)
+finalstrike env up --repo .
+
+# Live smoke UI — needs vision model in finalstrike.local.yaml or secrets
+finalstrike computer-use run --repo . \
+  --instruction 'Open http://localhost:3000/ and verify the page title is "Sample App"'
+
+# Evidence: .finalstrike/runs/<run_id>/screenshots/ and result.json
+finalstrike env down --repo .
+```
 
 ## LLM configuration (live runs)
 
