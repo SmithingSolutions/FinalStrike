@@ -12,6 +12,8 @@ from finalstrike.fixture_capabilities import (
     default_capabilities_path,
     load_capabilities,
 )
+from finalstrike.computer_use.browser import browser_available, browser_check_detail
+from finalstrike.config.loader import load_config
 from finalstrike.phase_status import (
     IMPLEMENTED_PHASES,
     STUB_MODULES,
@@ -196,6 +198,24 @@ def _fixture_checks(repo: Path) -> list[DoctorCheck]:
                 name="Fixture planned work",
                 status=CheckStatus.OK,
                 detail="No planned capabilities remain",
+            )
+        )
+
+    try:
+        config = load_config(repo)
+    except (OSError, ValueError):
+        config = None
+
+    if config is not None and config.ui is not None:
+        detail = browser_check_detail(config.ui.browser)
+        checks.append(
+            DoctorCheck(
+                name="Chrome/Chromium (P6)",
+                status=CheckStatus.OK
+                if browser_available(config.ui.browser)
+                else CheckStatus.SKIP,
+                detail=detail,
+                phase=6,
             )
         )
 

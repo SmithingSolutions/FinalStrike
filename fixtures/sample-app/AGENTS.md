@@ -14,6 +14,17 @@ Minimal API + static frontend used for FinalStrike integration testing.
 - UI: `http://localhost:3000/` — landing page with title "Sample App"
 - API: `http://localhost:8080/health`
 
+## Computer-use (P6)
+
+UI verification requires **Google Chrome or Chromium** on the GUI VM (`ui.browser`
+in `finalstrike.yaml`). Run `finalstrike doctor --repo .` to confirm
+`Chrome/Chromium (P6)`.
+
+```bash
+finalstrike computer-use run --repo . \
+  --instruction 'Open http://localhost:3000/ and verify the page title is "Sample App"'
+```
+
 ## Test commands
 
 - `pytest -q` — unit tests in `tests/`

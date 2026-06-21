@@ -64,12 +64,27 @@ class APIConfig(BaseModel):
     health: list[HealthCheckConfig] = Field(default_factory=list)
 
 
+class BrowserKind(str, Enum):
+    """Supported desktop browsers for computer-use (Chrome/Chromium only)."""
+
+    CHROMIUM = "chromium"
+    CHROME = "chrome"
+
+
 class UIConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     base_url: str
-    browser: str = "chromium"
+    browser: BrowserKind = BrowserKind.CHROMIUM
     smoke_route: str = "/"
+
+
+class ComputerUseConfig(BaseModel):
+    """Optional overrides for the computer-use action loop (falls back to ``llm``)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    llm: LLMConfig | None = None
 
 
 class SecretsConfig(BaseModel):
@@ -114,6 +129,7 @@ class FinalStrikeConfig(BaseModel):
     tests: TestsConfig = Field(default_factory=TestsConfig)
     api: APIConfig | None = None
     ui: UIConfig | None = None
+    computer_use: ComputerUseConfig | None = None
     secrets: SecretsConfig = Field(default_factory=SecretsConfig)
     evidence: EvidenceConfig = Field(default_factory=EvidenceConfig)
     slack: SlackConfig | None = None

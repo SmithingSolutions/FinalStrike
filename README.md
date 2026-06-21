@@ -112,6 +112,13 @@ PLAN.html           # Implementation plan
 
 **Phase 5 (P5)** — LLM test planner: `openai_compat` provider, AC + context → `VerificationPlan` JSON via `finalstrike plan --no-dry-run`, schema validation with retry.
 
+# P6 computer-use (Phase 6)
+
+**Phase 6 (P6)** — computer-use spike on Linux: screenshot + a11y context → vision LLM
+action → OS input (`xdotool`/`ydotool`), standalone `finalstrike computer-use run`,
+per-step screenshot evidence. **Requires Google Chrome or Chromium** on the GUI VM
+(`ui.browser: chromium` or `chrome` in `finalstrike.yaml`).
+
 **Gap guardrails** — `finalstrike doctor`, `docs/PHASE_GAPS.md`, `acceptance-smoke.md` / `acceptance-full.md`, and `capabilities.yaml` keep P6+ prerequisites visible.
 
 See [PLAN.html](PLAN.html) section 8 for the full phase roadmap.

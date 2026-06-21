@@ -83,6 +83,33 @@ class OpenAICompatProvider:
         payload_messages = [
             {"role": message.role, "content": message.content} for message in messages
         ]
+        return self._chat_completion_payload(
+            payload_messages,
+            temperature=temperature,
+            json_mode=json_mode,
+        )
+
+    def chat_completion_multimodal(
+        self,
+        messages: list[dict[str, object]],
+        *,
+        temperature: float = 0.2,
+        json_mode: bool = True,
+    ) -> str:
+        """Request a multimodal chat completion (text + image_url parts)."""
+        return self._chat_completion_payload(
+            messages,
+            temperature=temperature,
+            json_mode=json_mode,
+        )
+
+    def _chat_completion_payload(
+        self,
+        payload_messages: list[dict[str, object]],
+        *,
+        temperature: float,
+        json_mode: bool,
+    ) -> str:
         kwargs: dict[str, object] = {
             "model": self.config.model,
             "messages": payload_messages,

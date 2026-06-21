@@ -1,0 +1,215 @@
+"""P6 computer-use unit tests."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from finalstrike.computer_use.actions import (
+    ActionPayload,
+    ComputerActionResponse,
+    action_summary,
+    parse_action_response,
+)
+from finalstrike.computer_use.browser import (
+    BrowserLaunchError,
+    browser_available,
+    resolve_browser_binary,
+)
+from finalstrike.computer_use.config import resolve_computer_use_llm
+from finalstrike.computer_use.loop import ActionLoop, ReplayActionProvider
+from finalstrike.computer_use.platform.session import SessionType, detect_session_type
+from finalstrike.computer_use.prompt import action_prompt_version, build_action_messages
+from finalstrike.config.loader import load_config
+from finalstrike.config.models import BrowserKind, LayerStatus
+from tests.conftest import FIXTURE_REPO
+
+
+def test_parse_launch_action() -> None:
+    raw = json.dumps(
+        {
+            "thought": "open page",
+            "action": {"type": "launch", "url": "http://localhost:3000/"},
+        }
+    )
+    parsed = parse_action_response(raw)
+    assert parsed.action.type == "launch"
+    assert parsed.action.url == "http://localhost:3000/"
+
+
+def test_parse_done_action_requires_success() -> None:
+    with pytest.raises(ValueError, match="invalid computer-use action JSON"):
+        parse_action_response(
+            json.dumps({"thought": "done", "action": {"type": "done"}})
+        )
+
+
+def test_action_summary_labels() -> None:
+    assert action_summary(ActionPayload(type="launch", url="http://x")) == "launch(http://x)"
+    assert action_summary(ActionPayload(type="done", success=True)) == "done(success=True)"
+
+
+def test_resolve_computer_use_llm_falls_back_to_planner() -> None:
+    config = load_config(FIXTURE_REPO)
+    assert resolve_computer_use_llm(config) is config.llm
+
+
+def test_build_action_messages_include_image_part() -> None:
+    messages = build_action_messages(
+        instruction="verify title",
+        screenshot_data_url="data:image/png;base64,abc",
+        a11y_summary="session=x11",
+        history=[],
+    )
+    assert messages[0]["role"] == "system"
+    user = messages[1]
+    assert user["role"] == "user"
+    content = user["content"]
+    assert isinstance(content, list)
+    assert any(part.get("type") == "image_url" for part in content)
+
+
+def test_replay_action_provider_returns_responses_in_order() -> None:
+    provider = ReplayActionProvider(
+        [
+            json.dumps(
+                {
+                    "thought": "done",
+                    "action": {"type": "done", "success": True, "message": "ok"},
+                }
+            )
+        ]
+    )
+    raw = provider.chat_completion_multimodal([])
+    parsed = parse_action_response(raw)
+    assert parsed.action.success is True
+    assert provider.calls == 1
+
+
+class _FakeScreenshot:
+    def __init__(self) -> None:
+        self.png_bytes = b"fakepng"
+        self.width = 10
+        self.height = 10
+
+    def save(self, path: Path) -> Path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(self.png_bytes)
+        return path
+
+    def as_data_url(self) -> str:
+        return "data:image/png;base64,ZmFrZQ=="
+
+
+class _FakeScreenshotDriver:
+    def capture(self) -> _FakeScreenshot:
+        return _FakeScreenshot()
+
+
+class _FakeInput:
+    def __init__(self) -> None:
+        self.launched: list[str] = []
+
+    def click(self, x: int, y: int) -> None:
+        del x, y
+
+    def type_text(self, text: str) -> None:
+        del text
+
+    def key(self, combo: str) -> None:
+        del combo
+
+    def scroll(self, direction: str, amount: int = 3) -> None:
+        del direction, amount
+
+    def focus_window(self, title_substring: str) -> None:
+        del title_substring
+
+
+def test_action_loop_replay_cassette_completes(tmp_path: Path) -> None:
+    responses = [
+        json.dumps(
+            {
+                "thought": "launch",
+                "action": {"type": "launch", "url": "http://localhost:3000/"},
+            }
+        ),
+        json.dumps(
+            {
+                "thought": "wait",
+                "action": {"type": "wait", "seconds": 0.01},
+            }
+        ),
+        json.dumps(
+            {
+                "thought": "verified",
+                "action": {
+                    "type": "done",
+                    "success": True,
+                    "message": "Page title is Sample App",
+                },
+            }
+        ),
+    ]
+
+    loop = ActionLoop(
+        instruction='verify title "Sample App"',
+        output_dir=tmp_path,
+        provider=ReplayActionProvider(responses),
+        browser=BrowserKind.CHROMIUM,
+        max_steps=5,
+        max_retries=0,
+        screenshot_driver=_FakeScreenshotDriver(),
+        input_driver=_FakeInput(),
+    )
+
+    # Monkeypatch launch_browser to avoid real browser in unit test
+    import finalstrike.computer_use.loop as loop_module
+
+    launched: list[str] = []
+
+    def _fake_launch(url: str, *, browser: BrowserKind) -> object:
+        del browser
+        launched.append(url)
+        return object()
+
+    original = loop_module.launch_browser
+    loop_module.launch_browser = _fake_launch
+    try:
+        result = loop.run()
+    finally:
+        loop_module.launch_browser = original
+
+    assert result.status == LayerStatus.PASSED
+    assert len(result.steps) == 3
+    assert launched == ["http://localhost:3000/"]
+    assert (tmp_path / "screenshots" / "step-000.png").is_file()
+
+
+def test_detect_session_type_returns_enum() -> None:
+    session = detect_session_type()
+    assert isinstance(session, SessionType)
+
+
+def test_browser_resolution_reports_chrome_or_chromium() -> None:
+    if not browser_available(BrowserKind.CHROMIUM):
+        pytest.skip("Chrome/Chromium not installed on this host")
+    path = resolve_browser_binary(BrowserKind.CHROMIUM)
+    assert path
+
+
+def test_invalid_browser_kind_rejected_by_model() -> None:
+    from pydantic import ValidationError
+
+    from finalstrike.config.models import UIConfig
+
+    with pytest.raises(ValidationError):
+        UIConfig.model_validate(
+            {"base_url": "http://localhost:3000", "browser": "firefox"}
+        )
+
+
+def test_action_prompt_version_stable() -> None:
+    assert len(action_prompt_version()) == 16

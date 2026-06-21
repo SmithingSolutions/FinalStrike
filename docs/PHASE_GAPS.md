@@ -1,13 +1,13 @@
 # Phase gaps and guardrails
 
-Tracked gaps between completed phases (P0–P5) and upcoming work, with
+Tracked gaps between completed phases (P0–P6) and upcoming work, with
 guardrails so nothing is forgotten silently.
 
 ## Gap registry
 
 | Gap | Resolves in | Guardrail |
 |-----|-------------|-----------|
-| Stub modules (`computer_use/`, `evidence/`, `reporters/`) | P6–P9 | `finalstrike doctor` lists unimplemented phases; `finalstrike.phase_status` registry |
+| Stub modules (`evidence/`, `reporters/`) | P7–P10 | `finalstrike doctor` lists unimplemented phases; `finalstrike.phase_status` registry |
 | Fixture vs full acceptance criteria | P6 fixture extension | `acceptance-smoke.md` vs `acceptance-full.md`; `capabilities.yaml`; `tests/test_phase_guardrails.py` |
 | LLM output consistency | P5+ ongoing | `tests/llm_recordings/` cassettes; `@pytest.mark.llm_cassette`; live structural tests with `@requires_live_llm` |
 | OS tools (FFmpeg, browser, xdotool/ydotool) | P6/P7 | `@pytest.mark.requires_platform_tools`; `doctor` checks binaries |
@@ -43,8 +43,40 @@ FINALSTRIKE_RECORD_LLM=1 pytest -m requires_live_llm \
 ```
 
 Live tests assert **structure** (acceptance + `capabilities.yaml` coverage), not
-bitwise equality with canonical plans. The same cassette layout extends to P6
-computer-use action loops.
+bitwise equality with canonical plans. Computer-use action cassettes live under
+`tests/llm_recordings/computer_use/` with the same replay pattern.
+
+## Computer-use (P6)
+
+P6 uses **Approach A** (custom desktop loop: screenshot → vision LLM → OS input).
+The loop is exposed as a standalone command — full `run --layers ui` wiring is P10.
+
+**Required on the GUI VM:**
+
+- **Google Chrome or Chromium** — set `ui.browser` to `chromium` (default) or
+  `chrome` in `finalstrike.yaml`. FinalStrike does not use the OS default browser;
+  one of these binaries must be on `PATH` (`doctor` reports `Chrome/Chromium (P6)`).
+- **xdotool** (X11) or **ydotool** (Wayland) for mouse/keyboard input.
+- A real display session (`DISPLAY` or Wayland).
+
+Optional `computer_use.llm` block overrides the planner `llm` config for the
+vision/action model (must support image input). When omitted, the planner `llm`
+block is used.
+
+```bash
+# Smoke UI scenario from a plan JSON (cassette-friendly in tests)
+finalstrike computer-use run --repo fixtures/sample-app \
+  --plan /path/to/plan.json --scenario-id ac-2
+
+# Ad-hoc instruction
+finalstrike computer-use run --repo fixtures/sample-app \
+  --instruction 'Open http://localhost:3000/ and verify the page title is "Sample App"'
+```
+
+Per-step screenshots are written under `.finalstrike/runs/<run_id>/screenshots/`.
+Full desktop video recording is deferred to P7.
+
+See `docs/P6_APPROACH.md` for Approach A vs B notes and future host-app/plugin work.
 
 ## LLM planner (P5)
 
@@ -102,6 +134,6 @@ pytest tests/test_phase_guardrails.py tests/test_p5_planner_integration.py -q
 | Phase | Pre-flight |
 |-------|------------|
 | P5 | OpenAI-compatible API for live checks; cassettes cover default CI |
-| P6 | `doctor` shows ffmpeg + input tools; extend fixture or use smoke UI routes |
+| P6 | `doctor` shows Chrome/Chromium + ffmpeg + input tools; smoke UI via `acceptance-smoke.md` |
 | P7 | P3+P4+P6 paths produce layer results; artifact dir layout from P3 |
 | P8 | Replace `templates/report.html.j2` stub; sample `result.json` from a run |

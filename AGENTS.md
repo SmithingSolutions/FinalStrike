@@ -11,7 +11,7 @@ FinalStrike is a single Python package (`finalstrike`) exposing a Typer CLI. `fi
 ### Phase gaps (P5+)
 
 Before starting P6+, run `finalstrike doctor --repo fixtures/sample-app` and read
-`docs/PHASE_GAPS.md`. The fixture uses `acceptance-smoke.md` for P0–P5 work and
+`docs/PHASE_GAPS.md` and `docs/P6_APPROACH.md`. The fixture uses `acceptance-smoke.md` for P0–P6 smoke UI work and
 `acceptance-full.md` for future P6 demos; `capabilities.yaml` tracks what is
 implemented vs planned.
 

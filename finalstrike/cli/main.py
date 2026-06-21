@@ -20,6 +20,11 @@ from finalstrike.providers.openai_compat import LLMProviderError
 from finalstrike.env.orchestrator import EnvOrchestrator
 from finalstrike.doctor import CheckStatus, doctor_exit_code, run_doctor_checks
 from finalstrike.orchestrator.run import execute_run, format_run_result_json, parse_layers
+from finalstrike.computer_use.executor import (
+    execute_ui_from_plan,
+    execute_ui_scenario,
+    format_run_result_json as format_ui_run_result_json,
+)
 
 app = typer.Typer(
     name="finalstrike",
@@ -27,7 +32,9 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 env_app = typer.Typer(help="Manage target repo environment (install, terminals).")
+computer_use_app = typer.Typer(help="Computer-use UI verification (Phase 6).")
 app.add_typer(env_app, name="env")
+app.add_typer(computer_use_app, name="computer-use")
 console = Console(stderr=True)
 
 
@@ -466,5 +473,75 @@ def run(
         plan=verification_plan,
     )
     typer.echo(format_run_result_json(result))
+    if result.status.value == "failed":
+        raise typer.Exit(code=1)
+
+
+@computer_use_app.command("run")
+def computer_use_run(
+    repo: Annotated[
+        Path,
+        typer.Option(
+            "--repo",
+            "-r",
+            help="Path to the target repository containing finalstrike.yaml.",
+            file_okay=False,
+            dir_okay=True,
+            resolve_path=True,
+        ),
+    ],
+    instruction: Annotated[
+        Optional[str],
+        typer.Option(
+            "--instruction",
+            "-i",
+            help="Natural-language UI verification instruction.",
+        ),
+    ] = None,
+    plan: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--plan",
+            "-p",
+            help="VerificationPlan JSON with UI steps (alternative to --instruction).",
+            file_okay=True,
+            dir_okay=False,
+            resolve_path=True,
+        ),
+    ] = None,
+    scenario_id: Annotated[
+        Optional[str],
+        typer.Option(
+            "--scenario-id",
+            help="Scenario id when using --plan (default: first scenario with UI steps).",
+        ),
+    ] = None,
+) -> None:
+    """Execute a single computer-use UI scenario with per-step screenshot evidence."""
+    context = _load_context_or_exit(repo)
+
+    if instruction is not None and plan is not None:
+        console.print("[red]Error:[/red] Use only one of --instruction or --plan.")
+        raise typer.Exit(code=1)
+    if instruction is None and plan is None:
+        console.print("[red]Error:[/red] Provide --instruction or --plan.")
+        raise typer.Exit(code=1)
+
+    try:
+        if instruction is not None:
+            result = execute_ui_scenario(context, instruction=instruction)
+        else:
+            assert plan is not None
+            verification_plan = load_verification_plan(plan)
+            result = execute_ui_from_plan(
+                context,
+                verification_plan,
+                scenario_id=scenario_id,
+            )
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    typer.echo(format_ui_run_result_json(result))
     if result.status.value == "failed":
         raise typer.Exit(code=1)

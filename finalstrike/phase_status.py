@@ -15,11 +15,9 @@ class PhaseModule:
     summary: str
 
 
-IMPLEMENTED_PHASES: frozenset[int] = frozenset({0, 1, 2, 3, 4, 5})
+IMPLEMENTED_PHASES: frozenset[int] = frozenset({0, 1, 2, 3, 4, 5, 6})
 
 STUB_MODULES: tuple[PhaseModule, ...] = (
-    PhaseModule("finalstrike/computer_use/", 6, "Computer-use action loop"),
-    PhaseModule("finalstrike/computer_use/platform/", 6, "Linux platform drivers"),
     PhaseModule("finalstrike/evidence/", 7, "Evidence recorder and gap analyzer"),
     PhaseModule("finalstrike/reporters/html.py", 8, "HTML report generator"),
     PhaseModule("finalstrike/reporters/slack.py", 9, "Slack bot reporter"),
