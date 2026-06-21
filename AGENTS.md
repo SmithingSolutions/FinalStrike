@@ -29,3 +29,14 @@ implemented vs planned.
 - **Optional live tests** — `pytest -m requires_live_llm` runs structural planner checks against whatever endpoint is configured for the fixture repo. Gating uses `finalstrike.providers.live.assess_live_llm()` (probes `GET {base_url}/models` with the resolved key). `finalstrike doctor --repo …` reports the same as **Live LLM (P5)**. Refresh cassettes with `FINALSTRIKE_RECORD_LLM=1 pytest -m requires_live_llm tests/test_p5_planner_live.py::test_record_smoke_planner_cassette -q`. See `docs/PHASE_GAPS.md` and `tests/llm_recordings/README.md`.
 - **GOTCHA (fixture vault vs live API)** — the secrets vault OVERRIDES process env: `load_repo_context(..., inject_secrets=True)` does `os.environ.update(secrets)`. Running live through `fixtures/sample-app` therefore uses the vault's fake `OPENAI_API_KEY` and will 401 against a remote API, even when a real `OPENAI_API_KEY` is exported. Do not change the committed fixture vault — `tests/test_p1_context.py::test_load_secrets_from_sample_app` asserts `OPENAI_API_KEY == "fixture-test-key-not-real"`. For live external-API runs, use a separate `--repo` (e.g. a throwaway dir under `/tmp`) with its own `finalstrike.yaml` (`llm:` block) and `.finalstrike/secrets.env` (real key).
 - **GOTCHA (request params)** — some OpenAI models reject `max_tokens` and require `max_completion_tokens` instead. The current provider adapter does not set a token limit; if you hit HTTP 400 on that parameter, update `openai_compat.py` accordingly (reasoning models may also need a generous budget and non-default temperature).
+
+### Pull requests
+
+Use the structure in [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) for every PR. Fill in all four sections:
+
+1. **What** — brief description of what changed.
+2. **Why** — motivation, problem solved, or trade-off.
+3. **Validation** — tests and checks you ran (commands, scenarios, expected outcomes). Default suite: `source .venv/bin/activate && pytest -q`.
+4. **How to test locally** — step-by-step instructions for reviewers, including setup, commands, and what success looks like.
+
+Cloud agents should follow the same sections when creating or updating PR descriptions.
