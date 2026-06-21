@@ -14,6 +14,11 @@ from tests.conftest import (
     live_llm_available,
     live_llm_skip_reason,
 )
+from tests.support.cassette_repo import (
+    CASSETTE_ACCEPTANCE_SMOKE,
+    CASSETTE_SMOKE_REPO,
+    load_cassette_smoke_context,
+)
 from tests.support.llm_cassette import (
     DEFAULT_SMOKE_CASSETTE_ID,
     ReplayCassetteProvider,
@@ -30,6 +35,7 @@ from tests.support.plan_assertions import (
 
 @pytest.mark.requires_live_llm
 def test_generate_verification_plan_live_structural() -> None:
+    """Exercise the developer's configured fixtures/sample-app LLM settings."""
     if not live_llm_available():
         pytest.skip(live_llm_skip_reason())
 
@@ -53,24 +59,20 @@ def test_record_smoke_planner_cassette() -> None:
     """Re-record smoke-v1 cassette when FINALSTRIKE_RECORD_LLM=1."""
     if not should_record_llm():
         pytest.skip("Set FINALSTRIKE_RECORD_LLM=1 to refresh cassettes")
-    if not live_llm_available():
-        pytest.skip(live_llm_skip_reason())
+    if not live_llm_available(CASSETTE_SMOKE_REPO):
+        pytest.skip(live_llm_skip_reason(CASSETTE_SMOKE_REPO))
 
-    context = load_repo_context(
-        FIXTURE_REPO,
-        acceptance_path=ACCEPTANCE_FILE,
-        inject_secrets=True,
-    )
+    context = load_cassette_smoke_context(inject_secrets=True)
     cassette = record_planner_cassette(
         DEFAULT_SMOKE_CASSETTE_ID,
         context,
-        acceptance_path=ACCEPTANCE_SMOKE,
+        acceptance_path=CASSETTE_ACCEPTANCE_SMOKE,
         notes="Recorded via test_record_smoke_planner_cassette",
     )
     assert_cassette_matches_context(
         cassette,
         context,
-        acceptance_path=ACCEPTANCE_SMOKE,
+        acceptance_path=CASSETTE_ACCEPTANCE_SMOKE,
     )
 
     replayed = generate_verification_plan(

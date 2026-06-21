@@ -20,22 +20,9 @@ UI verification requires **Google Chrome or Chromium** on the GUI VM (`ui.browse
 in `finalstrike.yaml`). Run `finalstrike doctor --repo .` to confirm
 `Chrome/Chromium (P6)`.
 
-## LLM configuration (live runs)
-
-`finalstrike.yaml` ships with an Ollama example (`llm.base_url` /
-`llm.model`). For OpenAI or another gateway, edit the `llm:` block and put your
-API key in `.finalstrike/secrets.env`. Default `pytest -q` does not require
-Ollama or placeholder keys — cassette tests use `tests/fixtures/cassette-smoke-v1/`.
-
-```yaml
-llm:
-  provider: openai_compat
-  base_url: [REDACTED]
-  model: gpt-4o
-```
-
 ```bash
-finalstrike plan --repo . --acceptance acceptance-smoke.md --no-dry-run
+finalstrike computer-use run --repo . \
+  --instruction 'Open http://localhost:3000/ and verify the page title is "Sample App"'
 ```
 
 ## Test commands

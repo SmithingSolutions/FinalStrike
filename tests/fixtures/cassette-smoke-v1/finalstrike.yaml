@@ -1,0 +1,35 @@
+api:
+  base_url: http://localhost:8080
+  health:
+  - expect_status: 200
+    method: GET
+    path: /health
+build:
+  commands:
+  - name: install
+    run: pip install -r requirements.txt
+evidence:
+  output_dir: .finalstrike/runs
+  screenshots: true
+  video: true
+llm:
+  base_url: http://localhost:11434/v1
+  model: llama3
+  provider: openai_compat
+policy:
+  fail_fast: false
+  max_ui_retries: 4
+  max_ui_steps: 40
+project:
+  name: sample-app
+secrets:
+  file: .finalstrike/secrets.env
+tests:
+  commands:
+  - name: unit
+    run: pytest -q
+ui:
+  base_url: http://localhost:3000
+  browser: chromium
+  smoke_route: /
+version: '1'

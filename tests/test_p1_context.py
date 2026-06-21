@@ -146,12 +146,27 @@ def test_parse_secrets_content_handles_export_prefix() -> None:
     assert secrets["OPENAI_API_KEY"] == "secret123"
 
 
-def test_load_secrets_from_sample_app() -> None:
-    secrets, warnings = load_secrets(FIXTURE_REPO, ".finalstrike/secrets.env")
+def test_load_secrets_from_vault_file(tmp_path: Path) -> None:
+    secrets_dir = tmp_path / ".finalstrike"
+    secrets_dir.mkdir()
+    (secrets_dir / "secrets.env").write_text(
+        "OPENAI_API_KEY=fixture-test-key-not-real\n"
+        "SLACK_BOT_TOKEN=fixture-slack-token\n",
+        encoding="utf-8",
+    )
+    secrets, warnings = load_secrets(tmp_path, ".finalstrike/secrets.env")
     assert warnings == []
-    assert "OPENAI_API_KEY" in secrets
     assert secrets["OPENAI_API_KEY"] == "fixture-test-key-not-real"
-    assert "SLACK_BOT_TOKEN" in secrets
+    assert secrets["SLACK_BOT_TOKEN"] == "fixture-slack-token"
+
+
+def test_load_secrets_from_sample_app_when_present() -> None:
+    """Developers may use real API keys in the sample-app vault; only shape is checked."""
+    secrets, warnings = load_secrets(FIXTURE_REPO, ".finalstrike/secrets.env")
+    if not secrets:
+        pytest.skip("fixtures/sample-app/.finalstrike/secrets.env not present")
+    assert warnings == []
+    assert secrets.get("OPENAI_API_KEY")
 
 
 def test_load_secrets_missing_file(tmp_path: Path) -> None:

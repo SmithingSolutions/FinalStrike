@@ -75,8 +75,10 @@ if [[ ! -f "$SECRETS_FILE" ]]; then
 OPENAI_API_KEY=fixture-test-key-not-real
 SLACK_BOT_TOKEN=fixture-slack-token
 EOF
+  echo "(Edit this file with your real API key for live plan/computer-use runs.)"
 else
   echo "Fixture secrets vault already exists: $SECRETS_FILE"
+  echo "(Customize OPENAI_API_KEY and finalstrike.yaml for your LLM provider — tests allow this.)"
 fi
 
 echo ""

@@ -9,13 +9,17 @@ from threading import Thread
 
 import pytest
 
-from finalstrike.config.context import load_repo_context
 from finalstrike.config.models import APIConfig, LayerStatus, VerificationPlan
 from finalstrike.fixture_capabilities import load_capabilities
 from finalstrike.planner.planner import generate_verification_plan
 from finalstrike.planner.prompt import build_planner_messages
 from finalstrike.runners.api import run_api_layer
-from tests.conftest import ACCEPTANCE_FILE, ACCEPTANCE_SMOKE, FIXTURE_REPO
+from tests.conftest import ACCEPTANCE_FILE, FIXTURE_REPO
+from tests.support.cassette_repo import (
+    CASSETTE_ACCEPTANCE_SMOKE,
+    CASSETTE_SMOKE_REPO,
+    load_cassette_smoke_context,
+)
 from tests.support.llm_cassette import (
     ReplayCassetteProvider,
     assert_cassette_matches_context,
@@ -68,11 +72,7 @@ def echo_server() -> str:
 
 @pytest.fixture
 def smoke_repo_context():
-    return load_repo_context(
-        FIXTURE_REPO,
-        acceptance_path=ACCEPTANCE_FILE,
-        inject_secrets=False,
-    )
+    return load_cassette_smoke_context(inject_secrets=False)
 
 
 @pytest.fixture
@@ -93,12 +93,8 @@ def test_planner_messages_stable_across_repo_absolute_path(
     smoke_planner_cassette,
 ) -> None:
     """Cassette hashes must not depend on where the repo is cloned."""
-    ctx_a = load_repo_context(
-        FIXTURE_REPO,
-        acceptance_path=ACCEPTANCE_SMOKE,
-        inject_secrets=False,
-    )
-    other_root = FIXTURE_REPO.parent / "sample-app-mirror"
+    ctx_a = load_cassette_smoke_context(inject_secrets=False)
+    other_root = CASSETTE_SMOKE_REPO.parent / "cassette-smoke-v1-mirror"
     ctx_b = ctx_a.model_copy(update={"repo": other_root})
     msgs_a = serialize_messages(build_planner_messages(ctx_a))
     msgs_b = serialize_messages(build_planner_messages(ctx_b))
@@ -113,7 +109,7 @@ def test_planner_cassette_matches_repo_inputs(
     assert_cassette_matches_context(
         smoke_planner_cassette,
         smoke_repo_context,
-        acceptance_path=ACCEPTANCE_SMOKE,
+        acceptance_path=CASSETTE_ACCEPTANCE_SMOKE,
     )
 
 
@@ -136,8 +132,8 @@ def test_planner_cassette_replay_structural_coverage(
 ) -> None:
     provider = ReplayCassetteProvider(smoke_planner_cassette.responses)
     plan = generate_verification_plan(smoke_repo_context, provider=provider)
-    capabilities = load_capabilities(FIXTURE_REPO / "capabilities.yaml")
-    acceptance_text = ACCEPTANCE_SMOKE.read_text(encoding="utf-8")
+    capabilities = load_capabilities(CASSETTE_SMOKE_REPO / "capabilities.yaml")
+    acceptance_text = CASSETTE_ACCEPTANCE_SMOKE.read_text(encoding="utf-8")
 
     assert_plan_has_layer_coverage(plan)
     assert_plan_covers_acceptance(plan, acceptance_text)

@@ -8,11 +8,23 @@ import httpx
 import pytest
 
 from finalstrike.providers.live import assess_live_llm
-from tests.conftest import FIXTURE_REPO
 
 
-def test_assess_live_llm_unreachable_local_endpoint() -> None:
-    status = assess_live_llm(FIXTURE_REPO)
+def test_assess_live_llm_unreachable_local_endpoint(tmp_path: Path) -> None:
+    (tmp_path / "finalstrike.yaml").write_text(
+        """
+version: "1"
+project:
+  name: ollama-probe
+llm:
+  provider: openai_compat
+  base_url: http://localhost:11434/v1
+  model: llama3
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    status = assess_live_llm(tmp_path)
     assert not status.ready
     assert status.base_url == "http://localhost:11434/v1"
     assert status.model == "llama3"

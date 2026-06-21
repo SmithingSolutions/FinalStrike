@@ -29,7 +29,7 @@ pytest -q
 | Python 3.11+ (3.12 recommended) | Yes | `python3 --version` |
 | Project virtualenv at `.venv/` | Yes | Never use system `pip` on Debian/Ubuntu ([PEP 668](https://peps.python.org/pep-0668/)) |
 | `pip install -e ".[dev]"` into `.venv` | Yes | Installs `finalstrike`, `pytest`, `mss`, etc. |
-| Fixture secrets vault | Yes | `fixtures/sample-app/.finalstrike/secrets.env` (gitignored) |
+| Fixture secrets vault | For `doctor` only | `fixtures/sample-app/.finalstrike/secrets.env` must **exist** with `OPENAI_API_KEY` set (any value — real OpenAI key is fine) |
 | `pytest` on `PATH` when running tests | Yes | **Activate** `.venv` before `pytest -q`, or use `.venv/bin/pytest` |
 | Live LLM (Ollama, OpenAI, …) | No | Skipped; cassettes cover planner/computer-use in CI |
 | Chrome/Chromium, `xdotool`, GUI display | No | Only for optional `@requires_platform_tools` tests |
@@ -82,22 +82,44 @@ Without activating:
 .venv/bin/pip install -e ".[dev]"
 ```
 
-### 4. Fixture secrets vault (required)
+### 4. Fixture secrets vault (`doctor` and live CLI)
 
-Create the gitignored file the test suite expects:
+`finalstrike doctor --repo fixtures/sample-app` expects a secrets file to exist.
+The default test suite does **not** require specific fake key values — you may use
+your real OpenAI (or other provider) API key here.
 
 ```bash
 mkdir -p fixtures/sample-app/.finalstrike
 cat > fixtures/sample-app/.finalstrike/secrets.env <<'EOF'
-OPENAI_API_KEY=fixture-test-key-not-real
+OPENAI_API_KEY=your-real-or-placeholder-key
 SLACK_BOT_TOKEN=fixture-slack-token
 EOF
 ```
 
-Without this file, **6 tests** in `tests/test_p1_context.py` fail and
-`finalstrike doctor --repo fixtures/sample-app` reports **Secrets vault: fail**.
+`./scripts/setup-dev.sh` creates this file with placeholder values only when it is
+missing; it never overwrites an existing vault.
 
-### 5. Run tests the intended way
+### 5. Configure your LLM provider (optional — for live `plan` / `computer-use`)
+
+Edit `fixtures/sample-app/finalstrike.yaml` for the provider you use. Ollama is
+only the **committed example**; OpenAI, OpenRouter, LiteLLM, etc. are supported
+via `llm.base_url` and `llm.model`:
+
+```yaml
+llm:
+  provider: openai_compat
+  base_url: [REDACTED]
+  model: gpt-4o
+```
+
+Deterministic cassette tests use the isolated tree at
+`tests/fixtures/cassette-smoke-v1/` — **not** your edited `fixtures/sample-app/`
+config — so `pytest -q` stays green while you point the sample app at a live API.
+
+Optional `computer_use.llm` overrides the action/vision model; when omitted, the
+planner `llm` block is used.
+
+### 6. Run tests the intended way
 
 **Activate the venv** (recommended):
 
@@ -154,7 +176,8 @@ pytest -q
 
 ### Six failures in `test_p1_context.py` (secrets)
 
-Re-run step 4 or `./scripts/setup-dev.sh` to recreate `secrets.env`.
+Ensure `fixtures/sample-app/.finalstrike/secrets.env` exists with an
+`OPENAI_API_KEY` entry. The value may be your real API key.
 
 ### Optional: live LLM or computer-use on a GUI VM
 
