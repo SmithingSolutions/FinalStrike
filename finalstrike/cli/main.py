@@ -544,4 +544,7 @@ def computer_use_run(
 
     typer.echo(format_ui_run_result_json(result))
     if result.status.value == "failed":
+        ui_error = result.layers.ui.error if result.layers.ui else None
+        if ui_error:
+            console.print(f"[red]Computer-use failed:[/red] {ui_error}")
         raise typer.Exit(code=1)

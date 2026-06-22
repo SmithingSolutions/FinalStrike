@@ -39,6 +39,43 @@ def test_parse_launch_action() -> None:
     assert parsed.action.url == "http://localhost:3000/"
 
 
+def test_parse_action_from_markdown_fence() -> None:
+    raw = """```json
+{"thought": "open page", "action": {"type": "launch", "url": "http://localhost:3000/"}}
+```"""
+    parsed = parse_action_response(raw)
+    assert parsed.action.type == "launch"
+
+
+def test_parse_flat_action_shape() -> None:
+    raw = json.dumps(
+        {
+            "thought": "open page",
+            "type": "launch",
+            "url": "http://localhost:3000/",
+        }
+    )
+    parsed = parse_action_response(raw)
+    assert parsed.action.type == "launch"
+    assert parsed.action.url == "http://localhost:3000/"
+
+
+def test_parse_action_ignores_extra_fields() -> None:
+    raw = json.dumps(
+        {
+            "thought": "open page",
+            "reasoning": "extra field from model",
+            "action": {
+                "type": "launch",
+                "url": "http://localhost:3000/",
+                "confidence": 0.99,
+            },
+        }
+    )
+    parsed = parse_action_response(raw)
+    assert parsed.action.type == "launch"
+
+
 def test_parse_done_action_requires_success() -> None:
     with pytest.raises(ValueError, match="invalid computer-use action JSON"):
         parse_action_response(
@@ -126,6 +163,83 @@ class _FakeInput:
 
     def focus_window(self, title_substring: str) -> None:
         del title_substring
+
+
+def test_action_loop_retries_invalid_json_on_same_step(tmp_path: Path) -> None:
+    valid = json.dumps(
+        {
+            "thought": "done",
+            "action": {"type": "done", "success": True, "message": "ok"},
+        }
+    )
+
+    class _FlakyProvider:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def chat_completion_multimodal(
+            self,
+            messages: list[dict[str, object]],
+            *,
+            temperature: float = 0.2,
+            json_mode: bool = True,
+        ) -> str:
+            del temperature, json_mode
+            self.calls += 1
+            if self.calls == 1:
+                return "not json"
+            user = messages[1]
+            content = user["content"]
+            assert isinstance(content, list)
+            text = next(part["text"] for part in content if part.get("type") == "text")
+            assert "Previous attempt failed validation" in text
+            return valid
+
+    loop = ActionLoop(
+        instruction="verify title",
+        output_dir=tmp_path,
+        provider=_FlakyProvider(),
+        browser=BrowserKind.CHROMIUM,
+        max_steps=3,
+        max_retries=2,
+        screenshot_driver=_FakeScreenshotDriver(),
+        input_driver=_FakeInput(),
+    )
+    result = loop.run()
+    assert result.status == LayerStatus.PASSED
+    assert len(result.screenshots) == 1
+    assert len(result.steps) == 1
+
+
+def test_action_loop_surfaces_llm_error(tmp_path: Path) -> None:
+    from finalstrike.providers.openai_compat import LLMProviderError
+
+    class _RaisingProvider:
+        def chat_completion_multimodal(
+            self,
+            messages: list[dict[str, object]],
+            *,
+            temperature: float = 0.2,
+            json_mode: bool = True,
+        ) -> str:
+            del messages, temperature, json_mode
+            raise LLMProviderError("vision model rejected image input")
+
+    loop = ActionLoop(
+        instruction="verify title",
+        output_dir=tmp_path,
+        provider=_RaisingProvider(),
+        browser=BrowserKind.CHROMIUM,
+        max_steps=3,
+        max_retries=1,
+        screenshot_driver=_FakeScreenshotDriver(),
+        input_driver=_FakeInput(),
+    )
+    result = loop.run()
+    assert result.status == LayerStatus.FAILED
+    assert result.error is not None
+    assert "vision model rejected image input" in result.error
+    assert len(result.screenshots) == 1
 
 
 def test_action_loop_replay_cassette_completes(tmp_path: Path) -> None:

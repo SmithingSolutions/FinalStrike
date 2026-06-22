@@ -77,7 +77,8 @@ class ActionLoop:
         screenshots: list[str] = []
         retries_remaining = self.max_retries
 
-        for step_index in range(self.max_steps):
+        step_index = 0
+        while step_index < self.max_steps:
             screenshot = self._screenshot_driver.capture()
             rel_name = f"screenshots/step-{step_index:03d}.png"
             abs_path = self.output_dir / rel_name
@@ -85,32 +86,35 @@ class ActionLoop:
             screenshots.append(rel_name)
 
             a11y = self._a11y_driver.capture()
-            messages = build_action_messages(
-                instruction=self.instruction,
-                screenshot_data_url=screenshot.as_data_url(),
-                a11y_summary=a11y.summary(),
-                history=self._history,
-            )
-
-            try:
-                raw = self.provider.chat_completion_multimodal(
-                    messages,
-                    temperature=0.2,
-                    json_mode=True,
+            validation_error: str | None = None
+            parsed = None
+            for attempt in range(self.max_retries + 1):
+                messages = build_action_messages(
+                    instruction=self.instruction,
+                    screenshot_data_url=screenshot.as_data_url(),
+                    a11y_summary=a11y.summary(),
+                    history=self._history,
+                    validation_error=validation_error,
                 )
-                parsed = parse_action_response(raw)
-            except (LLMProviderError, ValueError) as exc:
-                if retries_remaining > 0:
-                    retries_remaining -= 1
-                    self._history.append(f"retry: {exc}")
-                    continue
-                return ActionLoopResult(
-                    status=LayerStatus.FAILED,
-                    steps=steps,
-                    screenshots=screenshots,
-                    error=str(exc),
-                )
+                try:
+                    raw = self.provider.chat_completion_multimodal(
+                        messages,
+                        temperature=0.2,
+                        json_mode=True,
+                    )
+                    parsed = parse_action_response(raw)
+                    break
+                except (LLMProviderError, ValueError) as exc:
+                    validation_error = str(exc)
+                    if attempt >= self.max_retries:
+                        return ActionLoopResult(
+                            status=LayerStatus.FAILED,
+                            steps=steps,
+                            screenshots=screenshots,
+                            error=validation_error,
+                        )
 
+            assert parsed is not None
             action = parsed.action
             label = action_summary(action)
             step = UIStepResult(
@@ -143,6 +147,7 @@ class ActionLoop:
 
             steps.append(step)
             self._history.append(summarize_completed_action(action))
+            step_index += 1
 
             if action.type == "done":
                 status = LayerStatus.PASSED if action.success else LayerStatus.FAILED

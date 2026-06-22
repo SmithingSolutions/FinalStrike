@@ -67,6 +67,7 @@ def execute_ui_scenario(
             )
         ],
         steps=loop_result.steps,
+        error=loop_result.error,
     )
 
     run_status = (

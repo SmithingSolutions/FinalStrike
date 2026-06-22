@@ -308,6 +308,7 @@ class UILayerResult(BaseModel):
     status: LayerStatus
     scenarios: list[UIScenarioResult] = Field(default_factory=list)
     steps: list[UIStepResult] = Field(default_factory=list)
+    error: str | None = None
 
 
 class RunLayers(BaseModel):

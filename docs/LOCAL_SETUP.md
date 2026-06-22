@@ -260,9 +260,17 @@ finalstrike env down --repo fixtures/sample-app
   - `screenshots/step-000.png`, `step-001.png`, … — one per loop step
   - `result.json` — full `RunResult` bundle
 
-A failed run exits **1**; inspect the last screenshots and stderr for the
-vision model's last action or a platform-tool error (missing browser, no
-`DISPLAY`, etc.).
+A failed run exits **1**; inspect `layers.ui.error` in `result.json` (and
+stderr) for the root cause. Common failures:
+
+- **Vision model not configured** — default Ollama `llama3` cannot read
+  screenshots; set `gpt-4o` (or similar) in `finalstrike.local.yaml`.
+- **Invalid action JSON** — the vision model returned text the parser could not
+  use; retry with a model that supports `response_format: json_object` or check
+  stderr for the validation message.
+- **Platform tools** — missing Chrome/Chromium, `DISPLAY`, or `xdotool`.
+
+Also inspect the last screenshots under `screenshots/` for visual context.
 
 ### Layered checks (without a live vision LLM)
 

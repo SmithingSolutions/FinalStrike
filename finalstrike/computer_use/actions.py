@@ -2,13 +2,37 @@
 
 from __future__ import annotations
 
+import json
+import re
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
+
+_JSON_FENCE_RE = re.compile(
+    r"```(?:json)?\s*(\{.*?\})\s*```",
+    re.DOTALL | re.IGNORECASE,
+)
+
+_ACTION_FIELD_NAMES = frozenset(
+    {
+        "type",
+        "url",
+        "x",
+        "y",
+        "text",
+        "combo",
+        "direction",
+        "amount",
+        "seconds",
+        "title",
+        "success",
+        "message",
+    }
+)
 
 
 class ActionPayload(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     type: Literal[
         "launch",
@@ -54,17 +78,31 @@ class ActionPayload(BaseModel):
 
 
 class ComputerActionResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     thought: str = ""
     action: ActionPayload
 
 
+def normalize_computer_action_response(data: dict[str, Any]) -> dict[str, Any]:
+    """Coerce common LLM response shapes into ``{thought, action}``."""
+    if isinstance(data.get("action"), dict):
+        return data
+    if "type" in data:
+        action = {key: data[key] for key in _ACTION_FIELD_NAMES if key in data}
+        return {
+            "thought": data.get("thought", ""),
+            "action": action,
+        }
+    return data
+
+
 def parse_action_response(raw: str) -> ComputerActionResponse:
     """Parse and validate LLM JSON output for a single action step."""
     try:
-        return ComputerActionResponse.model_validate_json(raw)
-    except ValidationError as exc:
+        payload = normalize_computer_action_response(extract_json_object(raw))
+        return ComputerActionResponse.model_validate(payload)
+    except (json.JSONDecodeError, ValidationError, ValueError) as exc:
         raise ValueError(f"invalid computer-use action JSON: {exc}") from exc
 
 
@@ -94,20 +132,18 @@ def action_summary(action: ActionPayload) -> str:
 def extract_json_object(raw: str) -> dict[str, Any]:
     """Extract a JSON object from raw LLM text (tolerates markdown fences)."""
     text = raw.strip()
-    if text.startswith("```"):
-        lines = text.splitlines()
-        if lines and lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        text = "\n".join(lines).strip()
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1 or end <= start:
-        raise ValueError("response does not contain a JSON object")
-    import json
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        match = _JSON_FENCE_RE.search(text)
+        if match is not None:
+            parsed = json.loads(match.group(1))
+        else:
+            start = text.find("{")
+            if start < 0:
+                raise ValueError("response does not contain a JSON object") from None
+            parsed = json.loads(text[start:])
 
-    parsed = json.loads(text[start : end + 1])
     if not isinstance(parsed, dict):
         raise ValueError("expected JSON object")
     return parsed
