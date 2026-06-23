@@ -21,6 +21,11 @@ from finalstrike.computer_use.prompt import (
     build_action_messages,
     summarize_completed_action,
 )
+from finalstrike.computer_use.title import (
+    expected_title_from_instruction,
+    wait_for_window_title,
+    window_list_includes_title,
+)
 from finalstrike.config.models import BrowserKind, LayerStatus, UIStepResult
 from finalstrike.providers.openai_compat import LLMProviderError
 
@@ -58,6 +63,7 @@ class ActionLoop:
         screenshot_driver: ScreenshotDriver | None = None,
         a11y_driver: AccessibilityDriver | None = None,
         input_driver: InputDriver | None = None,
+        title_load_timeout: float = 10.0,
     ) -> None:
         self.instruction = instruction
         self.output_dir = output_dir
@@ -65,6 +71,7 @@ class ActionLoop:
         self.browser = browser
         self.max_steps = max_steps
         self.max_retries = max_retries
+        self._title_load_timeout = title_load_timeout
         self._screenshot_driver = screenshot_driver or ScreenshotDriver()
         self._a11y_driver = a11y_driver or AccessibilityDriver()
         self._input_driver = input_driver
@@ -150,12 +157,24 @@ class ActionLoop:
             step_index += 1
 
             if action.type == "done":
-                status = LayerStatus.PASSED if action.success else LayerStatus.FAILED
+                success = bool(action.success)
+                message = action.message
+                expected_title = expected_title_from_instruction(self.instruction)
+                if expected_title and window_list_includes_title(
+                    self._a11y_driver.capture().windows,
+                    expected_title,
+                ):
+                    success = True
+                    if not action.success:
+                        message = (
+                            f'Page title verified via window manager: "{expected_title}"'
+                        )
+                status = LayerStatus.PASSED if success else LayerStatus.FAILED
                 return ActionLoopResult(
                     status=status,
                     steps=steps,
                     screenshots=screenshots,
-                    error=None if action.success else (action.message or "verification failed"),
+                    error=None if success else (message or "verification failed"),
                 )
 
         return ActionLoopResult(
@@ -177,6 +196,13 @@ class ActionLoop:
                 action.url,
                 browser=self.browser,
             )
+            expected_title = expected_title_from_instruction(self.instruction)
+            if expected_title:
+                wait_for_window_title(
+                    self._a11y_driver,
+                    expected_title,
+                    timeout=self._title_load_timeout,
+                )
             return
 
         if action.type == "click":

@@ -342,7 +342,14 @@ def test_plan_dry_run_isolated_repo(tmp_path: Path) -> None:
     assert "OPENAI_API_KEY: ***" in result.stdout
 
 
-def test_plan_dry_run_with_local_yaml_overlay(tmp_path: Path) -> None:
+def test_plan_dry_run_with_local_yaml_overlay(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from finalstrike.config.overrides import ENV_LLM_BASE_URL, ENV_LLM_MODEL
+
+    monkeypatch.delenv(ENV_LLM_MODEL, raising=False)
+    monkeypatch.delenv(ENV_LLM_BASE_URL, raising=False)
     repo = materialize_cassette_repo(
         tmp_path,
         local_yaml="llm:\n  model: local-override-model\n",

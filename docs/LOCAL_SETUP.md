@@ -268,6 +268,9 @@ stderr) for the root cause. Common failures:
 - **Invalid action JSON** — the vision model returned text the parser could not
   use; retry with a model that supports `response_format: json_object` or check
   stderr for the validation message.
+- **Page title still shows hostname** — Chromium may display `localhost` until the
+  document title loads; FinalStrike polls window titles for up to 10s after launch
+  and cross-checks WM titles when the vision model reports failure.
 - **Reasoning models (o-series, etc.)** — some models reject custom `temperature`
   and only accept the provider default; FinalStrike omits `temperature` automatically
   when the API reports it is unsupported.
