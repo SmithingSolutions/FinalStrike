@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import os
 import signal
 import subprocess
 import time
@@ -90,13 +89,21 @@ class EnvOrchestrator:
                     shell=True,
                     cwd=self.repo,
                     env=proc_env,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
                     start_new_session=True,
                 )
             except OSError as exc:
                 self._log(f"Failed to start [{terminal.name}]: {exc}")
+                status = LayerStatus.FAILED
+                self.down()
+                return self._finish(start, status)
+
+            if not self._process_is_running(proc.pid):
+                self._log(
+                    f"Process [{terminal.name}] pid={proc.pid} exited immediately "
+                    f"after start"
+                )
                 status = LayerStatus.FAILED
                 self.down()
                 return self._finish(start, status)
@@ -117,6 +124,16 @@ class EnvOrchestrator:
                     processes=self._started_pids,
                 ),
             )
+            time.sleep(0.25)
+            for managed in self._started_pids:
+                if not self._process_is_running(managed.pid):
+                    self._log(
+                        f"Process [{managed.name}] pid={managed.pid} exited shortly "
+                        f"after start (check port conflicts or install logs)"
+                    )
+                    status = LayerStatus.FAILED
+                    self.down()
+                    return self._finish(start, status)
 
         if self.config.api is not None and self.config.api.health:
             self._log(
@@ -150,6 +167,16 @@ class EnvOrchestrator:
         clear_env_state(self.repo)
         self._started_pids.clear()
         return messages
+
+    @staticmethod
+    def _process_is_running(pid: int) -> bool:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        except OSError:
+            return True
+        return True
 
     def _terminate_process(self, managed: ManagedProcess) -> str:
         try:

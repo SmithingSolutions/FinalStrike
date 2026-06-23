@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import socket
 import subprocess
 import time
@@ -89,6 +90,33 @@ def test_wait_for_health_success() -> None:
         proc.wait(timeout=5)
 
 
+def test_env_orchestrator_processes_survive_after_up_returns(tmp_path: Path) -> None:
+    """Terminal Popen handles must not use PIPE — children die when handles are GC'd."""
+    port = _free_port()
+    repo = _write_minimal_env_repo(tmp_path, port=port)
+    context = load_repo_context(repo, acceptance_path=ACCEPTANCE_FILE)
+    orchestrator = EnvOrchestrator(
+        repo=context.repo,
+        environment=context.environment,
+        config=context.config,
+        subprocess_env=context.subprocess_env,
+        health_timeout=15.0,
+    )
+    try:
+        result = orchestrator.up()
+        assert result.status == LayerStatus.PASSED
+        state = load_env_state(repo)
+        assert state is not None
+        for managed in state.processes:
+            os.kill(managed.pid, 0)
+        down_messages = orchestrator.down()
+        assert down_messages
+        assert not any("already stopped" in msg for msg in down_messages)
+    finally:
+        orchestrator.down()
+        assert load_env_state(repo) is None
+
+
 def test_env_orchestrator_install_and_teardown(tmp_path: Path) -> None:
     port = _free_port()
     repo = _write_minimal_env_repo(tmp_path, port=port)
@@ -126,20 +154,27 @@ def test_env_orchestrator_down_without_state(tmp_path: Path) -> None:
 
 
 @pytest.mark.integration
-def test_env_up_cli_sample_app() -> None:
-    """Start fixture services and verify /health responds."""
-    result = runner.invoke(
+def test_env_up_cli_starts_and_stops_services(tmp_path: Path) -> None:
+    """CLI env up must leave terminal children running until env down."""
+    port = _free_port()
+    repo = _write_minimal_env_repo(tmp_path, port=port)
+    up = runner.invoke(
         app,
-        ["env", "up", "--repo", str(FIXTURE_REPO), "--health-timeout", "30"],
+        ["env", "up", "--repo", str(repo), "--health-timeout", "15"],
     )
     try:
-        assert result.exit_code == 0, result.stderr
-        assert "Environment ready" in result.stderr
-        response = httpx.get("http://127.0.0.1:8080/health", timeout=5.0)
+        assert up.exit_code == 0, up.stderr
+        assert "Environment ready" in up.stderr
+        response = httpx.get(f"http://127.0.0.1:{port}/", timeout=5.0)
         assert response.status_code == 200
+        state = load_env_state(repo)
+        assert state is not None
+        for managed in state.processes:
+            os.kill(managed.pid, 0)
     finally:
-        down = runner.invoke(app, ["env", "down", "--repo", str(FIXTURE_REPO)])
+        down = runner.invoke(app, ["env", "down", "--repo", str(repo)])
         assert down.exit_code == 0
+        assert "already stopped" not in down.output.lower()
 
 
 def test_env_up_skips_without_environment_json(tmp_path: Path) -> None:
