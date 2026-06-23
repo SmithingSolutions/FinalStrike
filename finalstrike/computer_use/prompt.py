@@ -34,6 +34,9 @@ Rules:
 - Use done only when the instruction is satisfied or cannot be completed.
 - Prefer focus_window before typing when a specific window is needed.
 - Coordinates are pixels on the full desktop screenshot.
+- Chrome/Chromium may show the hostname (e.g. "localhost") as the tab title until
+  the page finishes loading; use wait and check visible_windows before done.
+- visible_windows lists WM-reported titles; prefer it when verifying page titles.
 - Return valid JSON only — no markdown fences.
 """
 
