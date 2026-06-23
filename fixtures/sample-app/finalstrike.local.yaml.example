@@ -8,12 +8,12 @@
 
 llm:
   provider: openai_compat
-  base_url: [REDACTED]
+  base_url: https://api.example.com/v1
   model: gpt-4o
 
 # Optional separate vision/action model for computer-use:
 # computer_use:
 #   llm:
 #     provider: openai_compat
-#     base_url: [REDACTED]
+#     base_url: https://api.example.com/v1
 #     model: gpt-4o

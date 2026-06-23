@@ -25,8 +25,10 @@ wheels/
 venv/
 ENV/
 
-# FinalStrike runtime artifacts
+# FinalStrike runtime artifacts (keep committed test fixture secrets below)
 .finalstrike/
+!tests/fixtures/cassette-smoke-v1/.finalstrike/
+!tests/fixtures/cassette-smoke-v1/.finalstrike/secrets.env
 
 # Testing / coverage
 .pytest_cache/

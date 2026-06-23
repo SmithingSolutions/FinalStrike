@@ -17,5 +17,10 @@
 
 ## Helpers
 
+- `tests.support.isolated_repo.materialize_cassette_repo(tmp_path, local_yaml=...)` — copy cassette tree + secrets + optional local overlay into `tmp_path` (preferred for dry-run / config tests)
 - `tests.support.cassette_repo.load_cassette_smoke_context()` — planner/cassette tests
 - `load_raw_config(repo)` — committed `finalstrike.yaml` only (no local overlay)
+
+Committed fake secrets for the cassette repo live at
+`tests/fixtures/cassette-smoke-v1/.finalstrike/secrets.env` (gitignore exception).
+`./scripts/setup-dev.sh` recreates them if missing.

@@ -68,6 +68,7 @@ echo "Installing package and dev dependencies..."
 .venv/bin/pip install -e ".[dev]"
 
 SECRETS_FILE="fixtures/sample-app/.finalstrike/secrets.env"
+CASSETTE_SECRETS_FILE="tests/fixtures/cassette-smoke-v1/.finalstrike/secrets.env"
 LOCAL_CONFIG_EXAMPLE="fixtures/sample-app/finalstrike.local.yaml.example"
 LOCAL_CONFIG_FILE="fixtures/sample-app/finalstrike.local.yaml"
 if [[ ! -f "$SECRETS_FILE" ]]; then
@@ -83,6 +84,15 @@ EOF
   echo "(Edit OPENAI_API_KEY and optional FINALSTRIKE_LLM_* for live runs.)"
 else
   echo "Fixture secrets vault already exists: $SECRETS_FILE"
+fi
+
+if [[ ! -f "$CASSETTE_SECRETS_FILE" ]]; then
+  echo "Creating cassette test secrets at $CASSETTE_SECRETS_FILE ..."
+  mkdir -p tests/fixtures/cassette-smoke-v1/.finalstrike
+  cat >"$CASSETTE_SECRETS_FILE" <<'EOF'
+OPENAI_API_KEY=fixture-test-key-not-real
+SLACK_BOT_TOKEN=fixture-slack-token
+EOF
 fi
 
 if [[ ! -f "$LOCAL_CONFIG_FILE" ]] && [[ -f "$LOCAL_CONFIG_EXAMPLE" ]]; then

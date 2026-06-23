@@ -30,6 +30,10 @@ from tests.conftest import (
     FIXTURE_REPO,
 )
 from tests.support.cassette_repo import CASSETTE_ACCEPTANCE_SMOKE
+from tests.support.isolated_repo import (
+    cassette_acceptance_path,
+    materialize_cassette_repo,
+)
 runner = CliRunner()
 
 
@@ -281,10 +285,12 @@ def test_planner_context_block_uses_agents_context_block() -> None:
     assert "smoke verification" in block
 
 
-def test_repo_context_redacts_secrets_in_dry_run() -> None:
+def test_repo_context_redacts_secrets_in_dry_run(tmp_path: Path) -> None:
+    repo = materialize_cassette_repo(tmp_path)
     ctx = load_repo_context(
-        CASSETTE_SMOKE_REPO,
-        acceptance_path=CASSETTE_ACCEPTANCE_SMOKE,
+        repo,
+        acceptance_path=cassette_acceptance_path(repo),
+        inject_secrets=False,
     )
     output = ctx.format_dry_run()
     assert "fixture-test-key-not-real" not in output
@@ -295,6 +301,67 @@ def test_repo_context_redacts_secrets_in_dry_run() -> None:
     assert "Planner Context" in output
     assert ctx.agents.to_context_block(repo=ctx.repo).strip() in output
     assert "pip install -r requirements.txt" in output
+
+
+def test_repo_context_dry_run_shows_local_yaml_overlay(tmp_path: Path) -> None:
+    local_yaml = """
+llm:
+  model: local-override-model
+""".strip()
+    repo = materialize_cassette_repo(tmp_path, local_yaml=local_yaml)
+    ctx = load_repo_context(
+        repo,
+        acceptance_path=cassette_acceptance_path(repo),
+        inject_secrets=False,
+    )
+    output = ctx.format_dry_run()
+    assert "local-override-model" in output
+    assert "finalstrike.local.yaml" in output
+    assert "OPENAI_API_KEY: ***" in output
+    assert "fixture-test-key-not-real" not in output
+
+
+def test_plan_dry_run_isolated_repo(tmp_path: Path) -> None:
+    repo = materialize_cassette_repo(tmp_path)
+    result = runner.invoke(
+        app,
+        [
+            "plan",
+            "--repo",
+            str(repo),
+            "--acceptance",
+            str(cassette_acceptance_path(repo)),
+            "--dry-run",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "FinalStrike Plan Context" in result.stdout
+    assert "sample-app" in result.stdout
+    assert "smoke verification" in result.stdout
+    assert "fixture-test-key-not-real" not in result.stdout
+    assert "OPENAI_API_KEY: ***" in result.stdout
+
+
+def test_plan_dry_run_with_local_yaml_overlay(tmp_path: Path) -> None:
+    repo = materialize_cassette_repo(
+        tmp_path,
+        local_yaml="llm:\n  model: local-override-model\n",
+    )
+    result = runner.invoke(
+        app,
+        [
+            "plan",
+            "--repo",
+            str(repo),
+            "--acceptance",
+            str(cassette_acceptance_path(repo)),
+            "--dry-run",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "local-override-model" in result.stdout
+    assert "finalstrike.local.yaml" in result.stdout
+    assert "OPENAI_API_KEY: ***" in result.stdout
 
 
 def test_load_environment_invalid_json(tmp_path: Path) -> None:
@@ -308,24 +375,19 @@ def test_load_environment_invalid_json(tmp_path: Path) -> None:
 # --- CLI plan ---
 
 
-def test_plan_dry_run_cassette_repo() -> None:
-    result = runner.invoke(
-        app,
-        [
-            "plan",
-            "--repo",
-            str(CASSETTE_SMOKE_REPO),
-            "--acceptance",
-            str(CASSETTE_ACCEPTANCE_SMOKE),
-            "--dry-run",
-        ],
+def test_plan_dry_run_cassette_repo_committed_snapshot() -> None:
+    """Uses committed cassette tree + committed test secrets (see .gitignore exception)."""
+    ctx = load_repo_context(
+        CASSETTE_SMOKE_REPO,
+        acceptance_path=CASSETTE_ACCEPTANCE_SMOKE,
+        inject_secrets=False,
     )
-    assert result.exit_code == 0
-    assert "FinalStrike Plan Context" in result.stdout
-    assert "sample-app" in result.stdout
-    assert "smoke verification" in result.stdout
-    assert "fixture-test-key-not-real" not in result.stdout
-    assert "OPENAI_API_KEY: ***" in result.stdout
+    if not ctx.secrets:
+        pytest.skip(
+            "cassette-smoke-v1/.finalstrike/secrets.env missing — run ./scripts/setup-dev.sh"
+        )
+    output = ctx.format_dry_run()
+    assert "OPENAI_API_KEY: ***" in output
 
 
 def test_plan_acceptance_stdin_empty() -> None:
