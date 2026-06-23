@@ -9,6 +9,8 @@ import pytest
 
 from finalstrike.providers.live import assess_live_llm
 
+from tests.support.isolated_repo import CASSETTE_SECRETS_ENV
+
 WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_REPO = WORKSPACE_ROOT / "fixtures" / "sample-app"
 # Committed config snapshot for deterministic tests (no gitignored local.yaml).
@@ -24,6 +26,15 @@ ACCEPTANCE_FILE = ACCEPTANCE_SMOKE
 #   local overlays. OK for CLI wiring, env/agents/secrets shape, live LLM markers.
 # - CASSETTE_SMOKE_REPO: frozen committed snapshot for deterministic assertions.
 # - tmp_path: when you control the full config in the test.
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _ensure_cassette_test_secrets() -> None:
+    """Committed cassette tests need fake secrets; .finalstrike/ is gitignored by default."""
+    secrets_path = CASSETTE_SMOKE_REPO / ".finalstrike" / "secrets.env"
+    if not secrets_path.is_file():
+        secrets_path.parent.mkdir(parents=True, exist_ok=True)
+        secrets_path.write_text(CASSETTE_SECRETS_ENV, encoding="utf-8")
 
 
 def live_llm_available(repo: Path | None = None) -> bool:
