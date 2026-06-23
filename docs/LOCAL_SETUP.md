@@ -236,6 +236,11 @@ finalstrike doctor --repo fixtures/sample-app
 # 2. Start fixture API + static frontend (port 3000)
 finalstrike env up --repo fixtures/sample-app
 
+# Confirm services stayed up (env down should stop them, not report "already stopped")
+finalstrike env down --repo fixtures/sample-app
+# Expect: "[api] pid=... stopped" and "[frontend] pid=... stopped" — not "already stopped"
+finalstrike env up --repo fixtures/sample-app
+
 # 3a. Ad-hoc instruction (simplest)
 finalstrike computer-use run --repo fixtures/sample-app \
   --instruction 'Open http://localhost:3000/ and verify the page title is "Sample App"'
@@ -275,6 +280,10 @@ stderr) for the root cause. Common failures:
   and only accept the provider default; FinalStrike omits `temperature` automatically
   when the API reports it is unsupported.
 - **Platform tools** — missing Chrome/Chromium, `DISPLAY`, or `xdotool`.
+- **`env down` reports "already stopped"** — terminal children died right after
+  `env up` (often port conflicts on 3000/8080). Re-run `env up`; if it fails,
+  free those ports or reboot stale processes. Success looks like
+  `[api] pid=... stopped`, not `already stopped`.
 
 Also inspect the last screenshots under `screenshots/` for visual context.
 
