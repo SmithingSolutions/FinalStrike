@@ -68,4 +68,4 @@ finalstrike doctor --repo .   # shows Local config overlay when present
 
 - No authentication (intentional for fixture simplicity)
 - No live third-party API integrations
-- Tier 2 task actions (complete, delete) from `acceptance-full.md` are **planned** — see `capabilities.yaml`
+- Tier 3 interactions (search, settings, wizard) from `capabilities.yaml` are **planned**

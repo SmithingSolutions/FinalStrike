@@ -12,8 +12,11 @@
       --border: #333333;
       --accent: #0047ab;
       --accent-hover: #003380;
+      --danger: #b3261e;
+      --danger-hover: #8c1d17;
       --success-bg: #e6f4ea;
       --success-text: #0d652d;
+      --muted: #444444;
     }
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -35,18 +38,15 @@
       text-decoration: none;
       margin-right: 1rem;
     }
-    nav a:hover {
-      text-decoration: underline;
-    }
-    h1 {
-      margin-top: 0;
-      font-size: 2rem;
-    }
+    nav a:hover { text-decoration: underline; }
+    h1 { margin-top: 0; font-size: 2rem; }
     .actions {
       margin: 1.25rem 0;
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
-    button,
-    .btn {
+    button {
       font-size: 1.125rem;
       font-weight: 600;
       padding: 0.75rem 1.25rem;
@@ -61,14 +61,14 @@
       color: #ffffff;
       border-color: var(--accent);
     }
-    button.primary:hover {
-      background: var(--accent-hover);
-      border-color: var(--accent-hover);
+    button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    button.danger {
+      background: var(--danger);
+      color: #ffffff;
+      border-color: var(--danger);
     }
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    button.danger:hover { background: var(--danger-hover); border-color: var(--danger-hover); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
     #task-form {
       border: 2px solid var(--border);
       border-radius: 8px;
@@ -76,17 +76,14 @@
       margin: 1rem 0;
       max-width: 40rem;
     }
-    #task-form.hidden {
-      display: none;
-    }
+    #task-form.hidden { display: none; }
     label {
       display: block;
       font-weight: 700;
       margin-bottom: 0.35rem;
       font-size: 1.05rem;
     }
-    input[type="text"],
-    textarea {
+    input[type="text"], textarea {
       width: 100%;
       font-size: 1.05rem;
       padding: 0.6rem 0.75rem;
@@ -95,10 +92,7 @@
       box-sizing: border-box;
       margin-bottom: 1rem;
     }
-    textarea {
-      min-height: 5rem;
-      resize: vertical;
-    }
+    textarea { min-height: 5rem; resize: vertical; }
     #status-message {
       min-height: 1.5rem;
       margin: 1rem 0;
@@ -107,9 +101,7 @@
       font-weight: 600;
       font-size: 1.05rem;
     }
-    #status-message:empty {
-      display: none;
-    }
+    #status-message:empty { display: none; }
     #status-message.success {
       background: var(--success-bg);
       color: var(--success-text);
@@ -117,27 +109,92 @@
     }
     #status-message.error {
       background: #fce8e6;
-      color: #b3261e;
-      border: 2px solid #b3261e;
+      color: var(--danger);
+      border: 2px solid var(--danger);
     }
     #task-list {
       list-style: none;
       padding: 0;
       margin: 1rem 0 0;
       max-width: 40rem;
+      max-height: 24rem;
+      overflow-y: auto;
+      border: 2px solid var(--border);
+      border-radius: 8px;
     }
     #task-list li {
-      border: 2px solid var(--border);
-      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      border-bottom: 1px solid var(--border);
       padding: 0.85rem 1rem;
-      margin-bottom: 0.75rem;
-      font-size: 1.1rem;
-      font-weight: 600;
+      font-size: 1.05rem;
     }
+    #task-list li:last-child { border-bottom: none; }
     #task-list .empty {
+      display: block;
       font-weight: 400;
-      color: #444444;
+      color: var(--muted);
       font-style: italic;
+    }
+    .task-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 0;
+    }
+    .task-title {
+      font-weight: 600;
+      word-break: break-word;
+    }
+    .task-title.completed {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+    .task-badge {
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid var(--success-text);
+      white-space: nowrap;
+    }
+    .task-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .task-actions button {
+      font-size: 0.95rem;
+      padding: 0.5rem 0.85rem;
+    }
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal.hidden { display: none; }
+    .modal-content {
+      background: #ffffff;
+      border: 3px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      max-width: 28rem;
+      width: calc(100% - 2rem);
+    }
+    .modal-content h2 { margin-top: 0; }
+    .modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
     }
   </style>
 </head>
@@ -151,6 +208,7 @@
 
   <div class="actions">
     <button type="button" id="new-task-btn" class="primary" data-testid="new-task-btn">New Task</button>
+    <button type="button" id="demo-tasks-btn" data-testid="load-demo-tasks-btn">Load Demo Tasks</button>
   </div>
 
   <div id="status-message" role="status" aria-live="polite"></div>
@@ -158,10 +216,8 @@
   <form id="task-form" class="hidden" aria-label="Create task" data-testid="task-form">
     <label for="task-title">Title</label>
     <input type="text" id="task-title" name="title" required autocomplete="off" data-testid="task-title">
-
     <label for="task-description">Description</label>
     <textarea id="task-description" name="description" rows="4" data-testid="task-description"></textarea>
-
     <button type="submit" class="primary" data-testid="save-task-btn">Save Task</button>
     <button type="button" id="cancel-btn" data-testid="cancel-task-btn">Cancel</button>
   </form>
@@ -171,16 +227,34 @@
     <li class="empty">No tasks yet. Click New Task to add one.</li>
   </ul>
 
+  <div id="delete-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" data-testid="delete-modal">
+    <div class="modal-content">
+      <h2 id="delete-modal-title">Delete task?</h2>
+      <p id="delete-modal-message"></p>
+      <div class="modal-actions">
+        <button type="button" id="delete-cancel-btn" data-testid="delete-cancel-btn">Cancel</button>
+        <button type="button" id="delete-confirm-btn" class="danger" data-testid="delete-confirm-btn">Confirm Delete</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const API_BASE = "";
 
     const newTaskBtn = document.getElementById("new-task-btn");
+    const demoTasksBtn = document.getElementById("demo-tasks-btn");
     const taskForm = document.getElementById("task-form");
     const cancelBtn = document.getElementById("cancel-btn");
     const statusMessage = document.getElementById("status-message");
     const taskList = document.getElementById("task-list");
     const titleInput = document.getElementById("task-title");
     const descriptionInput = document.getElementById("task-description");
+    const deleteModal = document.getElementById("delete-modal");
+    const deleteModalMessage = document.getElementById("delete-modal-message");
+    const deleteCancelBtn = document.getElementById("delete-cancel-btn");
+    const deleteConfirmBtn = document.getElementById("delete-confirm-btn");
+
+    let pendingDeleteTask = null;
 
     function setStatus(message, type) {
       statusMessage.textContent = message;
@@ -203,6 +277,18 @@
       taskForm.reset();
     }
 
+    function showDeleteModal(task) {
+      pendingDeleteTask = task;
+      deleteModalMessage.textContent = 'Are you sure you want to delete "' + task.title + '"?';
+      deleteModal.classList.remove("hidden");
+      deleteCancelBtn.focus();
+    }
+
+    function hideDeleteModal() {
+      pendingDeleteTask = null;
+      deleteModal.classList.add("hidden");
+    }
+
     function renderTasks(tasks) {
       taskList.innerHTML = "";
       if (!tasks.length) {
@@ -213,11 +299,51 @@
         taskList.dataset.ready = "true";
         return;
       }
+
       for (const task of tasks) {
         const item = document.createElement("li");
-        item.textContent = task.title;
         item.dataset.taskId = String(task.id);
         item.dataset.testid = "task-item";
+
+        const titleWrap = document.createElement("div");
+        titleWrap.className = "task-title-wrap";
+
+        const title = document.createElement("span");
+        title.className = "task-title" + (task.completed ? " completed" : "");
+        title.textContent = task.title;
+        titleWrap.appendChild(title);
+
+        if (task.completed) {
+          const badge = document.createElement("span");
+          badge.className = "task-badge";
+          badge.textContent = "Done";
+          badge.dataset.testid = "task-done-badge";
+          titleWrap.appendChild(badge);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "task-actions";
+
+        const toggleBtn = document.createElement("button");
+        toggleBtn.type = "button";
+        toggleBtn.dataset.testid = task.completed ? "mark-active-btn" : "mark-done-btn";
+        toggleBtn.textContent = task.completed ? "Mark Active" : "Mark Done";
+        toggleBtn.addEventListener("click", function () {
+          toggleComplete(task.id, !task.completed);
+        });
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.dataset.testid = "delete-task-btn";
+        deleteBtn.textContent = "Delete";
+        deleteBtn.addEventListener("click", function () {
+          showDeleteModal(task);
+        });
+
+        actions.appendChild(toggleBtn);
+        actions.appendChild(deleteBtn);
+        item.appendChild(titleWrap);
+        item.appendChild(actions);
         taskList.appendChild(item);
       }
       taskList.dataset.ready = "true";
@@ -229,8 +355,7 @@
         if (!response.ok) {
           throw new Error("Failed to load tasks (" + response.status + ")");
         }
-        const tasks = await response.json();
-        renderTasks(tasks);
+        renderTasks(await response.json());
       } catch (err) {
         taskList.innerHTML = "";
         const item = document.createElement("li");
@@ -248,7 +373,6 @@
 
       const title = titleInput.value.trim();
       const description = descriptionInput.value.trim();
-
       if (!title) {
         setStatus("Title is required.", "error");
         titleInput.focus();
@@ -257,19 +381,16 @@
 
       const saveBtn = taskForm.querySelector('button[type="submit"]');
       saveBtn.disabled = true;
-
       try {
         const response = await fetch(API_BASE + "/api/tasks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: title, description: description }),
         });
-
         if (!response.ok) {
           const errorBody = await response.json().catch(() => ({}));
           throw new Error(errorBody.error || "Save failed (" + response.status + ")");
         }
-
         const created = await response.json();
         hideForm();
         setStatus('Task "' + created.title + '" saved successfully.', "success");
@@ -281,9 +402,85 @@
       }
     }
 
+    async function toggleComplete(taskId, completed) {
+      clearStatus();
+      try {
+        const response = await fetch(API_BASE + "/api/tasks/" + taskId, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ completed: completed }),
+        });
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          throw new Error(errorBody.error || "Update failed (" + response.status + ")");
+        }
+        const updated = await response.json();
+        setStatus(
+          'Task "' + updated.title + '" marked ' + (updated.completed ? "done" : "active") + ".",
+          "success"
+        );
+        await loadTasks();
+      } catch (err) {
+        setStatus(err.message, "error");
+      }
+    }
+
+    async function confirmDelete() {
+      if (!pendingDeleteTask) return;
+      const task = pendingDeleteTask;
+      hideDeleteModal();
+      clearStatus();
+      try {
+        const response = await fetch(API_BASE + "/api/tasks/" + task.id, { method: "DELETE" });
+        if (!response.ok && response.status !== 204) {
+          const errorBody = await response.json().catch(() => ({}));
+          throw new Error(errorBody.error || "Delete failed (" + response.status + ")");
+        }
+        setStatus('Task "' + task.title + '" deleted.', "success");
+        await loadTasks();
+      } catch (err) {
+        setStatus(err.message, "error");
+      }
+    }
+
+    async function loadDemoTasks() {
+      clearStatus();
+      demoTasksBtn.disabled = true;
+      try {
+        for (let index = 1; index <= 15; index += 1) {
+          const response = await fetch(API_BASE + "/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: "Demo task " + index,
+              description: "Seeded for scroll testing",
+            }),
+          });
+          if (!response.ok) {
+            throw new Error("Failed to seed demo task " + index);
+          }
+        }
+        setStatus("Loaded 15 demo tasks.", "success");
+        await loadTasks();
+      } catch (err) {
+        setStatus(err.message, "error");
+      } finally {
+        demoTasksBtn.disabled = false;
+      }
+    }
+
     newTaskBtn.addEventListener("click", showForm);
+    demoTasksBtn.addEventListener("click", loadDemoTasks);
     cancelBtn.addEventListener("click", hideForm);
     taskForm.addEventListener("submit", saveTask);
+    deleteCancelBtn.addEventListener("click", hideDeleteModal);
+    deleteConfirmBtn.addEventListener("click", confirmDelete);
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && !deleteModal.classList.contains("hidden")) {
+        hideDeleteModal();
+      }
+    });
 
     loadTasks();
   </script>

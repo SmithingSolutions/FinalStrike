@@ -14,6 +14,8 @@ from urllib.parse import unquote, urlparse
 STATIC_ROOT = Path(__file__).resolve().parent.parent / "static"
 
 _SAFE_SEGMENT_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*$")
+_TASK_ID_RE = re.compile(r"^/api/tasks/(\d+)$")
+_CORS_METHODS = "GET, POST, PATCH, DELETE, OPTIONS"
 _STATIC_CONTENT_TYPES = {
     ".html": "text/html; charset=utf-8",
     ".css": "text/css; charset=utf-8",
@@ -93,10 +95,18 @@ def _json_response(handler: BaseHTTPRequestHandler, status: int, payload: Any) -
     handler.send_header("Content-Type", "application/json")
     handler.send_header("Content-Length", str(len(body)))
     handler.send_header("Access-Control-Allow-Origin", "*")
-    handler.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    handler.send_header("Access-Control-Allow-Methods", _CORS_METHODS)
     handler.send_header("Access-Control-Allow-Headers", "Content-Type")
     handler.end_headers()
     handler.wfile.write(body)
+
+
+def _empty_response(handler: BaseHTTPRequestHandler, status: int) -> None:
+    handler.send_response(status)
+    handler.send_header("Access-Control-Allow-Origin", "*")
+    handler.send_header("Access-Control-Allow-Methods", _CORS_METHODS)
+    handler.send_header("Access-Control-Allow-Headers", "Content-Type")
+    handler.end_headers()
 
 
 def _read_json_body(handler: BaseHTTPRequestHandler) -> Any:
@@ -128,11 +138,44 @@ def _list_tasks() -> list[dict[str, Any]]:
         return [dict(task) for task in _tasks]
 
 
+def _parse_task_id(path: str) -> int | None:
+    match = _TASK_ID_RE.match(path)
+    if not match:
+        return None
+    return int(match.group(1))
+
+
+def _get_task(task_id: int) -> dict[str, Any] | None:
+    with _tasks_lock:
+        for task in _tasks:
+            if task["id"] == task_id:
+                return dict(task)
+    return None
+
+
+def _update_task(task_id: int, *, completed: bool) -> dict[str, Any] | None:
+    with _tasks_lock:
+        for task in _tasks:
+            if task["id"] == task_id:
+                task["completed"] = completed
+                return dict(task)
+    return None
+
+
+def _delete_task(task_id: int) -> bool:
+    with _tasks_lock:
+        for index, task in enumerate(_tasks):
+            if task["id"] == task_id:
+                _tasks.pop(index)
+                return True
+    return False
+
+
 class HealthHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self) -> None:
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", _CORS_METHODS)
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
 
@@ -200,6 +243,54 @@ class HealthHandler(BaseHTTPRequestHandler):
 
         task = _create_task(title.strip(), description)
         _json_response(self, 201, task)
+
+    def do_PATCH(self) -> None:
+        path = urlparse(self.path).path
+        task_id = _parse_task_id(path)
+        if task_id is None:
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        try:
+            body = _read_json_body(self)
+        except json.JSONDecodeError:
+            _json_response(self, 400, {"error": "Invalid JSON body"})
+            return
+
+        if not isinstance(body, dict):
+            _json_response(self, 400, {"error": "JSON object required"})
+            return
+
+        if "completed" not in body:
+            _json_response(self, 400, {"error": "completed is required"})
+            return
+
+        completed = body["completed"]
+        if not isinstance(completed, bool):
+            _json_response(self, 400, {"error": "completed must be a boolean"})
+            return
+
+        updated = _update_task(task_id, completed=completed)
+        if updated is None:
+            _json_response(self, 404, {"error": "Task not found"})
+            return
+
+        _json_response(self, 200, updated)
+
+    def do_DELETE(self) -> None:
+        path = urlparse(self.path).path
+        task_id = _parse_task_id(path)
+        if task_id is None:
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        if not _delete_task(task_id):
+            _json_response(self, 404, {"error": "Task not found"})
+            return
+
+        _empty_response(self, 204)
 
     def log_message(self, format: str, *args: object) -> None:
         return

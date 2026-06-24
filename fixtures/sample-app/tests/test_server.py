@@ -57,6 +57,32 @@ def _post_json(url: str, payload: dict) -> tuple[int, dict]:
         return exc.code, data
 
 
+def _patch_json(url: str, payload: dict) -> tuple[int, dict]:
+    body = json.dumps(payload).encode("utf-8")
+    request = Request(
+        url,
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="PATCH",
+    )
+    try:
+        with urlopen(request) as response:
+            return response.status, json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        raw = exc.read().decode("utf-8")
+        data = json.loads(raw) if raw else {}
+        return exc.code, data
+
+
+def _delete(url: str) -> int:
+    request = Request(url, method="DELETE")
+    try:
+        with urlopen(request) as response:
+            return response.status
+    except HTTPError as exc:
+        return exc.code
+
+
 def _options(url: str) -> tuple[int, dict[str, str]]:
     request = Request(url, method="OPTIONS")
     with urlopen(request) as response:
@@ -81,6 +107,8 @@ def test_serves_tasks_page(api_server: str) -> None:
     assert status == 200
     assert b"Sample App - Tasks" in body
     assert b"New Task" in body
+    assert b"Load Demo Tasks" in body
+    assert b"Confirm Delete" in body
 
 
 def test_tasks_path_redirects_to_trailing_slash(api_server: str) -> None:
@@ -159,3 +187,52 @@ def test_static_path_traversal_rejected(api_server: str, path: str) -> None:
 )
 def test_resolve_static_path_rejects_unsafe_paths(path: str) -> None:
     assert resolve_static_path(path) is None
+
+
+def test_patch_task_completed(api_server: str) -> None:
+    _, task = _post_json(f"{api_server}/api/tasks", {"title": "Toggle me"})
+    status, updated = _patch_json(
+        f"{api_server}/api/tasks/{task['id']}",
+        {"completed": True},
+    )
+    assert status == 200
+    assert updated["completed"] is True
+
+    status, updated = _patch_json(
+        f"{api_server}/api/tasks/{task['id']}",
+        {"completed": False},
+    )
+    assert status == 200
+    assert updated["completed"] is False
+
+
+def test_patch_missing_task_returns_404(api_server: str) -> None:
+    status, body = _patch_json(
+        f"{api_server}/api/tasks/999",
+        {"completed": True},
+    )
+    assert status == 404
+    assert "not found" in body["error"].lower()
+
+
+def test_patch_requires_completed_field(api_server: str) -> None:
+    _, task = _post_json(f"{api_server}/api/tasks", {"title": "Needs completed"})
+    status, body = _patch_json(f"{api_server}/api/tasks/{task['id']}", {})
+    assert status == 400
+    assert "completed" in body["error"].lower()
+
+
+def test_delete_task(api_server: str) -> None:
+    _, task = _post_json(f"{api_server}/api/tasks", {"title": "Delete me"})
+    status = _delete(f"{api_server}/api/tasks/{task['id']}")
+    assert status == 204
+
+    list_status, raw = _get(f"{api_server}/api/tasks")
+    tasks = json.loads(raw.decode("utf-8"))
+    assert list_status == 200
+    assert tasks == []
+
+
+def test_delete_missing_task_returns_404(api_server: str) -> None:
+    status = _delete(f"{api_server}/api/tasks/999")
+    assert status == 404

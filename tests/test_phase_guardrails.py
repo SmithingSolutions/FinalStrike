@@ -33,7 +33,22 @@ def test_capabilities_manifest_present() -> None:
     capabilities = load_capabilities(FIXTURE_REPO / "capabilities.yaml")
     assert capabilities.version == "1"
     assert capabilities.implemented.api
-    assert capabilities.planned.api
+    planned = capabilities.planned
+    assert planned.api or planned.ui or planned.terminal
+
+
+def test_full_acceptance_documents_task_criteria() -> None:
+    full = ACCEPTANCE_FULL.read_text(encoding="utf-8")
+    assert "task list" in full.lower()
+    assert "New Task" in full
+    assert "POST /api/tasks" in full
+    assert "GET /api/tasks" in full
+    assert "PATCH /api/tasks" in full
+    assert "DELETE /api/tasks" in full
+    assert "Mark Done" in full
+    assert "Confirm Delete" in full
+    assert "http://localhost:8080/tasks/" in full
+    assert "Sample App - Tasks" in full
 
 
 def test_smoke_acceptance_matches_implemented_api() -> None:
@@ -43,16 +58,6 @@ def test_smoke_acceptance_matches_implemented_api() -> None:
         if check.path not in smoke:
             continue
         assert str(check.expect_status) in smoke
-
-
-def test_full_acceptance_documents_task_criteria() -> None:
-    full = ACCEPTANCE_FULL.read_text(encoding="utf-8")
-    assert "task list" in full.lower()
-    assert "New Task" in full
-    assert "POST /api/tasks" in full
-    assert "GET /api/tasks" in full
-    assert "http://localhost:8080/tasks/" in full
-    assert "Sample App - Tasks" in full
 
 
 def test_implemented_ui_routes_resolve_to_static_files() -> None:

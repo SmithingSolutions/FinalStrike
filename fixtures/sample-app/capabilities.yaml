@@ -15,6 +15,12 @@ implemented:
     - method: POST
       path: /api/tasks
       expect_status: 201
+    - method: PATCH
+      path: /api/tasks/{id}
+      expect_status: 200
+    - method: DELETE
+      path: /api/tasks/{id}
+      expect_status: 204
   ui:
     - route: /
       title: Sample App
@@ -22,16 +28,19 @@ implemented:
       title: Sample App - Tasks
     - action: create_task
       description: Fill title and description, save, see task in list
-  terminal:
-    - command: pytest -q
-
-planned:
-  api:
-    - method: PATCH
-      path: /api/tasks/{id}
-      expect_status: 200
-  ui:
     - action: complete_task
       description: Toggle task complete status on the Tasks page
     - action: delete_task
       description: Delete task with confirmation modal
+  terminal:
+    - command: pytest -q
+
+planned:
+  ui:
+    - action: search_tasks
+      description: Filter the task list with a search box
+    - route: /settings
+      title: Sample App - Settings
+      description: Settings page with theme and sort options
+    - action: import_wizard
+      description: Multi-step wizard to import tasks from pasted text
