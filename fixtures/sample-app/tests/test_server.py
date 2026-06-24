@@ -11,7 +11,7 @@ from urllib.request import Request, urlopen
 
 import pytest
 
-from sample_app.server import HealthHandler, reset_tasks_for_testing
+from sample_app.server import HealthHandler, resolve_static_path, reset_tasks_for_testing
 
 
 def _free_port() -> int:
@@ -131,3 +131,31 @@ def test_cors_preflight_allows_post(api_server: str) -> None:
     )
     assert post_status == 201
     assert task["title"] == "CORS task"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/../etc/passwd",
+        "/tasks/../../etc/passwd",
+        "/%2e%2e/%2e%2e/etc/passwd",
+        "/tasks/..%2f..%2fetc/passwd",
+        "/tasks/%2e%2e/secret",
+    ],
+)
+def test_static_path_traversal_rejected(api_server: str, path: str) -> None:
+    with pytest.raises(HTTPError) as exc_info:
+        _get(f"{api_server}{path}")
+    assert exc_info.value.code == 404
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/../etc/passwd",
+        "/tasks/../../etc/passwd",
+        "/%2e%2e/%2e%2e/etc/passwd",
+    ],
+)
+def test_resolve_static_path_rejects_unsafe_paths(path: str) -> None:
+    assert resolve_static_path(path) is None

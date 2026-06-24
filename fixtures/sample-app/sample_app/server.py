@@ -3,15 +3,24 @@
 from __future__ import annotations
 
 import json
-import mimetypes
+import re
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 STATIC_ROOT = Path(__file__).resolve().parent.parent / "static"
+
+_SAFE_SEGMENT_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*$")
+_STATIC_CONTENT_TYPES = {
+    ".html": "text/html; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".ico": "image/x-icon",
+    ".svg": "image/svg+xml",
+}
 
 _tasks_lock = threading.Lock()
 _tasks: list[dict[str, Any]] = []
@@ -26,32 +35,56 @@ def reset_tasks_for_testing() -> None:
         _next_task_id = 1
 
 
-def resolve_static_path(url_path: str) -> Path | None:
-    """Map a URL path to a file under ``static/``."""
-    path = url_path.split("?", 1)[0]
+def _safe_path_segments(url_path: str) -> list[str] | None:
+    """Parse a URL path into safe static-file segments, or None if rejected."""
+    path = unquote(urlparse(url_path).path)
     if path in {"", "/"}:
-        candidate = STATIC_ROOT / "index.html"
-        return candidate if candidate.is_file() else None
+        return []
 
-    relative = path.lstrip("/")
-    direct = STATIC_ROOT / relative
-    if direct.is_file():
-        return direct
+    relative = path.lstrip("/").rstrip("/")
+    if not relative:
+        return []
 
-    directory = relative.rstrip("/")
-    index_candidate = STATIC_ROOT / directory / "index.html"
-    if index_candidate.is_file():
-        return index_candidate
+    segments = relative.split("/")
+    if any(
+        not segment or segment in {".", ".."} or not _SAFE_SEGMENT_RE.match(segment)
+        for segment in segments
+    ):
+        return None
+    return segments
 
-    return None
 
-
-def _path_is_under_root(candidate: Path, root: Path) -> bool:
+def _file_if_under_root(candidate: Path) -> Path | None:
+    if not candidate.is_file():
+        return None
     try:
-        candidate.resolve().relative_to(root.resolve())
+        candidate.resolve().relative_to(STATIC_ROOT.resolve())
     except ValueError:
-        return False
-    return True
+        return None
+    return candidate
+
+
+def resolve_static_path(url_path: str) -> Path | None:
+    """Map a URL path to a file under ``static/`` without path traversal."""
+    segments = _safe_path_segments(url_path)
+    if segments is None:
+        return None
+
+    if not segments:
+        return _file_if_under_root(STATIC_ROOT / "index.html")
+
+    direct = STATIC_ROOT.joinpath(*segments)
+    resolved = _file_if_under_root(direct)
+    if resolved is not None:
+        return resolved
+
+    index_candidate = STATIC_ROOT.joinpath(*segments, "index.html")
+    return _file_if_under_root(index_candidate)
+
+
+def _static_content_type(path: Path) -> str:
+    """Return a fixed Content-Type for known static assets."""
+    return _STATIC_CONTENT_TYPES.get(path.suffix.lower(), "application/octet-stream")
 
 
 def _json_response(handler: BaseHTTPRequestHandler, status: int, payload: Any) -> None:
@@ -122,15 +155,14 @@ class HealthHandler(BaseHTTPRequestHandler):
             return
 
         static_path = resolve_static_path(path)
-        if static_path is None or not _path_is_under_root(static_path, STATIC_ROOT):
+        if static_path is None:
             self.send_response(404)
             self.end_headers()
             return
 
-        content_type, _ = mimetypes.guess_type(str(static_path))
         body = static_path.read_bytes()
         self.send_response(200)
-        self.send_header("Content-Type", content_type or "application/octet-stream")
+        self.send_header("Content-Type", _static_content_type(static_path))
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
