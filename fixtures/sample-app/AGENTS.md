@@ -6,13 +6,12 @@ Minimal API + static frontend used for FinalStrike integration testing.
 
 | Service  | Port | Notes                    |
 |----------|------|--------------------------|
-| API      | 8080 | `GET /health`, `GET/POST /api/tasks` |
-| Frontend | 3000 | Static HTML pages (`/`, `/tasks/`) |
+| App      | 8080 | API + static frontend (`python3 -m sample_app.server`) |
 
-## Smoke routes
+## Routes
 
-- UI: `http://localhost:3000/` — landing page with title "Sample App"
-- UI: `http://localhost:3000/tasks/` — task list page with title "Sample App - Tasks"
+- UI: `http://localhost:8080/` — landing page with title "Sample App"
+- UI: `http://localhost:8080/tasks/` — task list page with title "Sample App - Tasks"
 - API: `http://localhost:8080/health`
 - API: `http://localhost:8080/api/tasks` — list tasks (`GET`) or create (`POST` JSON `{"title": "...", "description": "..."}`)
 
@@ -27,16 +26,16 @@ Full step-by-step setup (platform packages, LLM overrides, evidence paths):
 **[docs/LOCAL_SETUP.md § Testing computer-use locally](../../docs/LOCAL_SETUP.md#testing-computer-use-locally-p6)**.
 
 ```bash
-# Start API + frontend (frontend serves static/ on port 3000)
+# Start API + frontend (single process on port 8080)
 finalstrike env up --repo .
 
 # Live smoke UI — needs vision model in finalstrike.local.yaml or secrets
 finalstrike computer-use run --repo . \
-  --instruction 'Open http://localhost:3000/ and verify the page title is "Sample App"'
+  --instruction 'Open http://localhost:8080/ and verify the page title is "Sample App"'
 
 # Tier 1 task-list demo (use acceptance-full.md for planner runs)
 finalstrike computer-use run --repo . \
-  --instruction 'Open http://localhost:3000/tasks/ and verify the page title is "Sample App - Tasks"'
+  --instruction 'Open http://localhost:8080/tasks/ and verify the page title is "Sample App - Tasks"'
 
 # Evidence: .finalstrike/runs/<run_id>/screenshots/ and result.json
 finalstrike env down --repo .

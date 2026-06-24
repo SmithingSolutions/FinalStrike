@@ -51,7 +51,7 @@ def test_full_acceptance_documents_task_criteria() -> None:
     assert "New Task" in full
     assert "POST /api/tasks" in full
     assert "GET /api/tasks" in full
-    assert "http://localhost:3000/tasks/" in full
+    assert "http://localhost:8080/tasks/" in full
     assert "Sample App - Tasks" in full
 
 

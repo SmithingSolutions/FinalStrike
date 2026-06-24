@@ -172,7 +172,7 @@
   </ul>
 
   <script>
-    const API_BASE = "http://localhost:8080";
+    const API_BASE = "";
 
     const newTaskBtn = document.getElementById("new-task-btn");
     const taskForm = document.getElementById("task-form");
@@ -235,7 +235,7 @@
         taskList.innerHTML = "";
         const item = document.createElement("li");
         item.className = "empty";
-        item.textContent = "Could not load tasks. Is the API running on port 8080?";
+        item.textContent = "Could not load tasks. Is the API server running?";
         taskList.appendChild(item);
         taskList.dataset.ready = "true";
         setStatus(err.message, "error");

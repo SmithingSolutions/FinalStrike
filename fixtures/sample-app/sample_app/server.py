@@ -1,13 +1,17 @@
-"""Minimal HTTP server: health check and in-memory task API."""
+"""HTTP server: health check, task API, and static frontend."""
 
 from __future__ import annotations
 
 import json
+import mimetypes
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+
+STATIC_ROOT = Path(__file__).resolve().parent.parent / "static"
 
 _tasks_lock = threading.Lock()
 _tasks: list[dict[str, Any]] = []
@@ -20,6 +24,34 @@ def reset_tasks_for_testing() -> None:
     with _tasks_lock:
         _tasks.clear()
         _next_task_id = 1
+
+
+def resolve_static_path(url_path: str) -> Path | None:
+    """Map a URL path to a file under ``static/``."""
+    path = url_path.split("?", 1)[0]
+    if path in {"", "/"}:
+        candidate = STATIC_ROOT / "index.html"
+        return candidate if candidate.is_file() else None
+
+    relative = path.lstrip("/")
+    direct = STATIC_ROOT / relative
+    if direct.is_file():
+        return direct
+
+    directory = relative.rstrip("/")
+    index_candidate = STATIC_ROOT / directory / "index.html"
+    if index_candidate.is_file():
+        return index_candidate
+
+    return None
+
+
+def _path_is_under_root(candidate: Path, root: Path) -> bool:
+    try:
+        candidate.resolve().relative_to(root.resolve())
+    except ValueError:
+        return False
+    return True
 
 
 def _json_response(handler: BaseHTTPRequestHandler, status: int, payload: Any) -> None:
@@ -82,8 +114,26 @@ class HealthHandler(BaseHTTPRequestHandler):
         if path == "/api/tasks":
             _json_response(self, 200, _list_tasks())
             return
-        self.send_response(404)
+
+        if path == "/tasks":
+            self.send_response(301)
+            self.send_header("Location", "/tasks/")
+            self.end_headers()
+            return
+
+        static_path = resolve_static_path(path)
+        if static_path is None or not _path_is_under_root(static_path, STATIC_ROOT):
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        content_type, _ = mimetypes.guess_type(str(static_path))
+        body = static_path.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", content_type or "application/octet-stream")
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
+        self.wfile.write(body)
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
@@ -126,7 +176,11 @@ class HealthHandler(BaseHTTPRequestHandler):
 def main() -> None:
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
     server = HTTPServer(("0.0.0.0", port), HealthHandler)
-    print(f"sample-app API listening on http://localhost:{port}", flush=True)
+    print(
+        f"sample-app listening on http://localhost:{port} "
+        f"(API + static frontend)",
+        flush=True,
+    )
     server.serve_forever()
 
 

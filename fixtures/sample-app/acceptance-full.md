@@ -5,7 +5,7 @@
 
 ### Acceptance Criteria
 
-- Tasks page loads at http://localhost:3000/tasks/ with page title "Sample App - Tasks"
+- Tasks page loads at http://localhost:8080/tasks/ with page title "Sample App - Tasks"
 - User can open the Tasks page and see the task list
 - User can click "New Task", fill title and description, and save
 - New task appears in the list with correct title

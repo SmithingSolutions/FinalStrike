@@ -30,7 +30,7 @@ tests:
   - name: unit
     run: pytest -q
 ui:
-  base_url: http://localhost:3000
+  base_url: http://localhost:8080
   browser: chromium
   smoke_route: /
 version: '1'

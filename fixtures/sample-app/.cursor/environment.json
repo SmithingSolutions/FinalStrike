@@ -3,12 +3,8 @@
   "install": "pip install -r requirements.txt",
   "terminals": [
     {
-      "name": "api",
+      "name": "app",
       "command": "python3 -m sample_app.server"
-    },
-    {
-      "name": "frontend",
-      "command": "python3 -m http.server 3000 --directory static"
     }
   ]
 }

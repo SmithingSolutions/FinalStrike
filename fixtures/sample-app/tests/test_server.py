@@ -70,6 +70,26 @@ def test_health_endpoint(api_server: str) -> None:
     assert body == b"ok"
 
 
+def test_serves_landing_page(api_server: str) -> None:
+    status, body = _get(f"{api_server}/")
+    assert status == 200
+    assert b"Sample App" in body
+
+
+def test_serves_tasks_page(api_server: str) -> None:
+    status, body = _get(f"{api_server}/tasks/")
+    assert status == 200
+    assert b"Sample App - Tasks" in body
+    assert b"New Task" in body
+
+
+def test_tasks_path_redirects_to_trailing_slash(api_server: str) -> None:
+    request = Request(f"{api_server}/tasks", method="GET")
+    with urlopen(request) as response:
+        assert response.status == 200
+        assert response.url.endswith("/tasks/")
+
+
 def test_post_task_success(api_server: str) -> None:
     status, task = _post_json(
         f"{api_server}/api/tasks",
