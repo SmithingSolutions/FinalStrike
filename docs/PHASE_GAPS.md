@@ -16,7 +16,7 @@ guardrails so nothing is forgotten silently.
 ## Acceptance criteria files (fixture)
 
 - **`acceptance-smoke.md`** — matches the current smoke subset (health, landing page, tests). Use for P0–P5 default runs.
-- **`acceptance-full.md`** — Tier 1 task-list scenario for P6 demos (implemented).
+- **`acceptance-full.md`** — Tiers 1–5 task-list scenario (fixture complete; `capabilities.yaml` `planned` empty).
 - **`capabilities.yaml`** — source of truth for implemented vs planned behavior.
 
 When extending the fixture, update `capabilities.yaml` first, then move items
@@ -39,6 +39,8 @@ pytest -m requires_live_llm tests/test_p5_planner_live.py -q
 # Refresh cassettes after prompt or acceptance changes
 FINALSTRIKE_RECORD_LLM=1 pytest -m requires_live_llm \
   tests/test_p5_planner_live.py::test_record_smoke_planner_cassette -q
+FINALSTRIKE_RECORD_LLM=1 pytest -m requires_live_llm \
+  tests/test_p5_planner_live.py::test_record_full_planner_cassette -q
 ```
 
 Live tests assert **structure** (acceptance + `capabilities.yaml` coverage), not
@@ -67,9 +69,9 @@ block is used.
 finalstrike computer-use run --repo fixtures/sample-app \
   --plan /path/to/plan.json --scenario-id ac-2
 
-# Ad-hoc instruction
+# Ad-hoc instruction (unified server on port 8080)
 finalstrike computer-use run --repo fixtures/sample-app \
-  --instruction 'Open http://localhost:3000/ and verify the page title is "Sample App"'
+  --instruction 'Open http://localhost:8080/ and verify the page title is "Sample App"'
 ```
 
 Per-step screenshots are written under `.finalstrike/runs/<run_id>/screenshots/`.

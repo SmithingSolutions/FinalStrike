@@ -1,0 +1,435 @@
+{
+  "gaps": [],
+  "scenarios": [
+    {
+      "id": "ac-1",
+      "layers": {
+        "api": [
+          {
+            "body": null,
+            "expect": {
+              "headers": null,
+              "json_paths": null,
+              "status": 200
+            },
+            "headers": null,
+            "method": "GET",
+            "path": "/health"
+          }
+        ],
+        "terminal": [],
+        "ui": []
+      },
+      "source": "API health endpoint returns 200 on GET /health"
+    },
+    {
+      "id": "ac-2",
+      "layers": {
+        "api": [
+          {
+            "body": null,
+            "expect": {
+              "headers": null,
+              "json_paths": null,
+              "status": 200
+            },
+            "headers": null,
+            "method": "GET",
+            "path": "/api/tasks"
+          }
+        ],
+        "terminal": [],
+        "ui": []
+      },
+      "source": "API returns 200 on GET /api/tasks with a JSON array of tasks"
+    },
+    {
+      "id": "ac-3",
+      "layers": {
+        "api": [
+          {
+            "body": {
+              "description": "from planner",
+              "title": "Cassette task"
+            },
+            "expect": {
+              "headers": null,
+              "json_paths": null,
+              "status": 201
+            },
+            "headers": null,
+            "method": "POST",
+            "path": "/api/tasks"
+          }
+        ],
+        "terminal": [],
+        "ui": []
+      },
+      "source": "API returns 201 on POST /api/tasks with JSON body {\"title\": \"<title>\", \"description\": \"<optional>\"}"
+    },
+    {
+      "id": "ac-4",
+      "layers": {
+        "api": [
+          {
+            "body": {
+              "completed": true
+            },
+            "expect": {
+              "headers": null,
+              "json_paths": null,
+              "status": 200
+            },
+            "headers": null,
+            "method": "PATCH",
+            "path": "/api/tasks/{id}"
+          }
+        ],
+        "terminal": [],
+        "ui": []
+      },
+      "source": "API returns 200 on PATCH /api/tasks/{id} with JSON body {\"completed\": true} or {\"completed\": false}"
+    },
+    {
+      "id": "ac-5",
+      "layers": {
+        "api": [
+          {
+            "body": null,
+            "expect": {
+              "headers": null,
+              "json_paths": null,
+              "status": 204
+            },
+            "headers": null,
+            "method": "DELETE",
+            "path": "/api/tasks/{id}"
+          }
+        ],
+        "terminal": [],
+        "ui": []
+      },
+      "source": "API returns 204 on DELETE /api/tasks/{id}"
+    },
+    {
+      "id": "ac-6",
+      "layers": {
+        "api": [
+          {
+            "body": null,
+            "expect": {
+              "headers": null,
+              "json_paths": null,
+              "status": 200
+            },
+            "headers": null,
+            "method": "GET",
+            "path": "/api/tasks/{id}"
+          }
+        ],
+        "terminal": [],
+        "ui": []
+      },
+      "source": "API returns 200 on GET /api/tasks/{id} with the matching task JSON"
+    },
+    {
+      "id": "ac-7",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "Open http://localhost:8080/tasks/ and verify the page title is \"Sample App - Tasks\""
+          }
+        ]
+      },
+      "source": "Tasks page loads at http://localhost:8080/tasks/ with page title \"Sample App - Tasks\""
+    },
+    {
+      "id": "ac-8",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "Open http://localhost:8080/tasks/ and verify the task list is visible"
+          }
+        ]
+      },
+      "source": "User can open the Tasks page and see the task list"
+    },
+    {
+      "id": "ac-9",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "On http://localhost:8080/tasks/, click \"New Task\", fill title and description, save the form"
+          }
+        ]
+      },
+      "source": "User can click \"New Task\", fill title and description, and save"
+    },
+    {
+      "id": "ac-10",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "After creating a task, verify its title appears in the task list on the Tasks page"
+          }
+        ]
+      },
+      "source": "New task appears in the list with correct title"
+    },
+    {
+      "id": "ac-11",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "On the Tasks page, click \"Mark Done\" on a task and verify a Done badge with strikethrough title"
+          }
+        ]
+      },
+      "source": "User can click \"Mark Done\" on a task and see a Done badge with strikethrough title"
+    },
+    {
+      "id": "ac-12",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "On the Tasks page, click \"Mark Active\" on a completed task and verify the done state clears"
+          }
+        ]
+      },
+      "source": "User can click \"Mark Active\" to clear the done state"
+    },
+    {
+      "id": "ac-13",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "Delete a task using \"Delete\", confirm with \"Confirm Delete\", and verify it is removed from the list"
+          }
+        ]
+      },
+      "source": "User can click \"Delete\", confirm with \"Confirm Delete\" in the modal, and the task is removed from the list"
+    },
+    {
+      "id": "ac-14",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "Open the delete modal, click \"Cancel\" or press Escape, and verify the task remains in the list"
+          }
+        ]
+      },
+      "source": "User can click \"Cancel\" or press Escape to dismiss the delete modal without deleting"
+    },
+    {
+      "id": "ac-15",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "Click \"Load Demo Tasks\", verify 15 tasks appear, and scroll the task list"
+          }
+        ]
+      },
+      "source": "User can click \"Load Demo Tasks\" to seed 15 tasks and scroll the task list"
+    },
+    {
+      "id": "ac-16",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "Open http://localhost:8080/settings/ and verify the page title is \"Sample App - Settings\""
+          }
+        ]
+      },
+      "source": "Settings page loads at http://localhost:8080/settings/ with page title \"Sample App - Settings\""
+    },
+    {
+      "id": "ac-17",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "On Settings, choose Light or Dark theme, click \"Save Settings\", and verify \"Settings saved.\" appears"
+          }
+        ]
+      },
+      "source": "User can choose Light or Dark theme and click \"Save Settings\" to see \"Settings saved.\""
+    },
+    {
+      "id": "ac-18",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "On Settings, choose a default sort order (Newest first, Oldest first, or Title A-Z) and save"
+          }
+        ]
+      },
+      "source": "User can choose a default sort order (Newest first, Oldest first, Title A-Z) on Settings"
+    },
+    {
+      "id": "ac-19",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "On the Tasks page, type in the search box and verify the visible task list filters as you type"
+          }
+        ]
+      },
+      "source": "Tasks page search box filters the visible list as the user types"
+    },
+    {
+      "id": "ac-20",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "Use the Import Tasks wizard: paste titles, click Next, review preview, and Confirm Import"
+          }
+        ]
+      },
+      "source": "User can click \"Import Tasks\", paste titles (one per line), click Next, review preview, and Confirm Import"
+    },
+    {
+      "id": "ac-21",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "After confirming import in the wizard, verify imported tasks appear in the task list"
+          }
+        ]
+      },
+      "source": "Imported tasks appear in the task list via POST /api/tasks"
+    },
+    {
+      "id": "ac-22",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "On the Tasks page, click a task title and verify the browser opens the task detail URL /tasks/{id}"
+          }
+        ]
+      },
+      "source": "User can click a task title on the Tasks page to open http://localhost:8080/tasks/{id}"
+    },
+    {
+      "id": "ac-23",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "Open a task detail page and verify title \"Sample App - Task Detail\" with full title and description"
+          }
+        ]
+      },
+      "source": "Task detail page shows page title \"Sample App - Task Detail\" with full title and description"
+    },
+    {
+      "id": "ac-24",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "Open http://localhost:8080/ and verify the Task overview dashboard shows total, active, and done counts"
+          }
+        ]
+      },
+      "source": "Home page at http://localhost:8080/ shows a Task overview with total, active, and done counts"
+    },
+    {
+      "id": "ac-25",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "On the home page, verify recent task links navigate to task detail pages"
+          }
+        ]
+      },
+      "source": "Recent tasks on the home page link to task detail pages"
+    },
+    {
+      "id": "ac-26",
+      "layers": {
+        "api": [
+          {
+            "body": null,
+            "expect": {
+              "headers": null,
+              "json_paths": null,
+              "status": 200
+            },
+            "headers": null,
+            "method": "GET",
+            "path": "/api/tasks"
+          }
+        ],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "Compare home dashboard total, active, and done counts against the task list from GET /api/tasks"
+          }
+        ]
+      },
+      "source": "Dashboard counts match GET /api/tasks results"
+    },
+    {
+      "id": "ac-27",
+      "layers": {
+        "api": [],
+        "terminal": [],
+        "ui": [
+          {
+            "instruction": "Open http://localhost:8080/ and verify the page title is \"Sample App\""
+          }
+        ]
+      },
+      "source": "Frontend landing page loads at / with title \"Sample App\""
+    },
+    {
+      "id": "ac-28",
+      "layers": {
+        "api": [],
+        "terminal": [
+          {
+            "command": "pytest -q",
+            "reason": "Run unit tests from finalstrike.yaml"
+          }
+        ],
+        "ui": []
+      },
+      "source": "Unit tests pass via `pytest -q`"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+[
+  "{\"thought\": \"Open the tasks page in Chrome\", \"action\": {\"type\": \"launch\", \"url\": \"http://localhost:8080/tasks/\"}}",
+  "{\"thought\": \"Wait for the page to finish loading\", \"action\": {\"type\": \"wait\", \"seconds\": 2}}",
+  "{\"thought\": \"The browser tab title is Sample App - Tasks\", \"action\": {\"type\": \"done\", \"success\": true, \"message\": \"Page title is Sample App - Tasks\"}}"
+]

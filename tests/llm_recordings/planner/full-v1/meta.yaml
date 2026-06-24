@@ -1,0 +1,14 @@
+id: full-v1
+phase: 5
+component: planner
+acceptance: tests/fixtures/cassette-full-v1/acceptance-full.md
+acceptance_sha256: e54466bfdd171b421d45d5807cf82ae8755c825e96eaff3fbb054e487aa53a43
+prompt_version: c59d39b2c27ed2ef
+messages_sha256: 9fb1e6637c3dfe480a192be8a40bbd0dd2e7da943e59747f444aa64bd1809d0e
+recorded_with:
+  base_url: http://localhost:11434/v1
+  model: llama3
+  temperature: 0.2
+  source: hand-authored canonical plan for deterministic CI replay
+attempts: 1
+notes: Refresh with FINALSTRIKE_RECORD_LLM=1 when prompt or acceptance changes.

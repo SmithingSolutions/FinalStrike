@@ -1,8 +1,8 @@
 id: smoke-title-v1
 phase: 6
 component: computer_use
-instruction: Open http://localhost:3000/ and verify the page title is "Sample App"
-instruction_sha256: be00008a4dd153c59c38393329f874d1dd56fcf99df2f00918c4c50b79faf309
+instruction: Open http://localhost:8080/ and verify the page title is "Sample App"
+instruction_sha256: 9a6ada71abcc81d0f6f74d23ecdccfd17f706242b28039267b78aa8104315bce
 prompt_version: cd13c7c010242b1d
 responses: 3
 notes: Deterministic action replay for smoke UI title verification.

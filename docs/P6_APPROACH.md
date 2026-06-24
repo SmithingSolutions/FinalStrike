@@ -29,7 +29,7 @@ Configure in `finalstrike.yaml`:
 
 ```yaml
 ui:
-  base_url: http://localhost:3000
+  base_url: http://localhost:8080
   browser: chromium   # or chrome
 ```
 
@@ -43,8 +43,8 @@ The OS default browser (`xdg-open`) is **not** used — reproducibility and
 |-------|----------|
 | Standalone `finalstrike computer-use run` | `finalstrike run --layers ui` (P10) |
 | Per-step screenshots | Full FFmpeg desktop video (P7) |
-| Smoke UI (`acceptance-smoke.md` ac-2) | Tier 2 task actions (complete, delete) |
-| Action cassettes for deterministic tests | HTML report (P8) |
+| Smoke UI (`acceptance-smoke.md` ac-2) | Full fixture UI (`acceptance-full.md`) via planner `full-v1` cassette |
+| Action cassettes (`smoke-title-v1`, `full-tasks-title-v1`) | HTML report (P8) |
 
 ## Future: plugins inside host applications
 

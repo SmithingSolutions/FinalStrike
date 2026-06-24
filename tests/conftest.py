@@ -9,6 +9,7 @@ import pytest
 
 from finalstrike.providers.live import assess_live_llm
 
+from tests.support.cassette_repo import CASSETTE_FULL_REPO
 from tests.support.isolated_repo import CASSETTE_SECRETS_ENV
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
@@ -31,10 +32,11 @@ ACCEPTANCE_FILE = ACCEPTANCE_SMOKE
 @pytest.fixture(scope="session", autouse=True)
 def _ensure_cassette_test_secrets() -> None:
     """Committed cassette tests need fake secrets; .finalstrike/ is gitignored by default."""
-    secrets_path = CASSETTE_SMOKE_REPO / ".finalstrike" / "secrets.env"
-    if not secrets_path.is_file():
-        secrets_path.parent.mkdir(parents=True, exist_ok=True)
-        secrets_path.write_text(CASSETTE_SECRETS_ENV, encoding="utf-8")
+    for repo in (CASSETTE_SMOKE_REPO, CASSETTE_FULL_REPO):
+        secrets_path = repo / ".finalstrike" / "secrets.env"
+        if not secrets_path.is_file():
+            secrets_path.parent.mkdir(parents=True, exist_ok=True)
+            secrets_path.write_text(CASSETTE_SECRETS_ENV, encoding="utf-8")
 
 
 def live_llm_available(repo: Path | None = None) -> bool:

@@ -1,0 +1,8 @@
+id: full-tasks-title-v1
+phase: 6
+component: computer_use
+instruction: Open http://localhost:8080/tasks/ and verify the page title is "Sample App - Tasks"
+instruction_sha256: c38f54c7487c37f2cce9bf445f190384ebe0c9938153a024e8d98ee0a6aac41c
+prompt_version: cd13c7c010242b1d
+responses: 3
+notes: Deterministic action replay for full acceptance tasks page title verification.

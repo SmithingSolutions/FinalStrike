@@ -79,3 +79,4 @@ def assert_action_cassette_current(cassette: ActionCassette) -> None:
 
 
 DEFAULT_SMOKE_TITLE_CASSETTE_ID = "smoke-title-v1"
+DEFAULT_FULL_TASKS_TITLE_CASSETTE_ID = "full-tasks-title-v1"

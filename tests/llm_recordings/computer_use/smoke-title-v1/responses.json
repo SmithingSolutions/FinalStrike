@@ -1,5 +1,5 @@
 [
-  "{\"thought\": \"Open the smoke page in Chrome\", \"action\": {\"type\": \"launch\", \"url\": \"http://localhost:3000/\"}}",
+  "{\"thought\": \"Open the smoke page in Chrome\", \"action\": {\"type\": \"launch\", \"url\": \"http://localhost:8080/\"}}",
   "{\"thought\": \"Wait for the page to finish loading\", \"action\": {\"type\": \"wait\", \"seconds\": 2}}",
   "{\"thought\": \"The browser tab title is Sample App\", \"action\": {\"type\": \"done\", \"success\": true, \"message\": \"Page title is Sample App\"}}"
 ]

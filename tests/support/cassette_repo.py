@@ -14,6 +14,8 @@ from finalstrike.config.context import RepoContext, load_repo_context
 WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
 CASSETTE_SMOKE_REPO = WORKSPACE_ROOT / "tests" / "fixtures" / "cassette-smoke-v1"
 CASSETTE_ACCEPTANCE_SMOKE = CASSETTE_SMOKE_REPO / "acceptance-smoke.md"
+CASSETTE_FULL_REPO = WORKSPACE_ROOT / "tests" / "fixtures" / "cassette-full-v1"
+CASSETTE_ACCEPTANCE_FULL = CASSETTE_FULL_REPO / "acceptance-full.md"
 
 
 def load_cassette_smoke_context(
@@ -24,5 +26,17 @@ def load_cassette_smoke_context(
     return load_repo_context(
         CASSETTE_SMOKE_REPO,
         acceptance_path=CASSETTE_ACCEPTANCE_SMOKE,
+        inject_secrets=inject_secrets,
+    )
+
+
+def load_cassette_full_context(
+    *,
+    inject_secrets: bool = False,
+) -> RepoContext:
+    """Load the committed full-acceptance cassette fixture repo."""
+    return load_repo_context(
+        CASSETTE_FULL_REPO,
+        acceptance_path=CASSETTE_ACCEPTANCE_FULL,
         inject_secrets=inject_secrets,
     )

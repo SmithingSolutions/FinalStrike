@@ -228,3 +228,4 @@ def should_record_llm() -> bool:
 
 
 DEFAULT_SMOKE_CASSETTE_ID = "smoke-v1"
+DEFAULT_FULL_CASSETTE_ID = "full-v1"

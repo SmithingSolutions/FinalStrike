@@ -1,0 +1,10 @@
+{
+  "version": "1",
+  "install": "pip install -r requirements.txt",
+  "terminals": [
+    {
+      "name": "app",
+      "command": "python3 -m sample_app.server 8080"
+    }
+  ]
+}
