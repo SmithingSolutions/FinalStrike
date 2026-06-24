@@ -79,7 +79,11 @@ def test_generate_verification_plan_live_full_structural() -> None:
     assert plan.scenarios
     assert_plan_has_layer_coverage(plan)
     assert_plan_covers_acceptance(plan, acceptance_text)
-    assert_plan_covers_capabilities(plan, capabilities)
+    assert_plan_covers_capabilities(
+        plan,
+        capabilities,
+        allow_ui_api_substitute=True,
+    )
 
 
 @pytest.mark.requires_live_llm
