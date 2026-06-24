@@ -89,12 +89,56 @@ def assert_plan_covers_acceptance(plan: VerificationPlan, acceptance: str) -> No
         assert matched, f"No scenario maps to acceptance bullet: {bullet!r}"
 
 
+def _api_paths_match(capability_path: str, step_path: str) -> bool:
+    """Match exact paths or template segments like ``{id}``."""
+    if capability_path == step_path:
+        return True
+    cap_parts = capability_path.strip("/").split("/")
+    step_parts = step_path.strip("/").split("/")
+    if len(cap_parts) != len(step_parts):
+        return False
+    for cap_seg, step_seg in zip(cap_parts, step_parts, strict=True):
+        if cap_seg.startswith("{") and cap_seg.endswith("}"):
+            if not step_seg:
+                return False
+            continue
+        if cap_seg != step_seg:
+            return False
+    return True
+
+
+def _api_path_ui_route(api_path: str) -> str | None:
+    if api_path.startswith("/api/"):
+        return api_path.replace("/api", "", 1)
+    return None
+
+
+def _ui_route_matches_instruction(route: str, instruction: str) -> bool:
+    if route in instruction:
+        return True
+    trimmed = route.rstrip("/")
+    if trimmed and (trimmed + "/" in instruction or f"{trimmed}/" in instruction):
+        return True
+    if "{" not in route:
+        return trimmed in instruction
+
+    pattern = re.escape(trimmed)
+    pattern = re.sub(r"\\\{[^}]+\\\}", r"[^/]+", pattern)
+    return re.search(rf"{pattern}(?:/|\b)", instruction) is not None
+
+
 def assert_plan_covers_capabilities(
     plan: VerificationPlan,
     capabilities: FixtureCapabilities,
+    *,
+    allow_ui_api_substitute: bool = False,
 ) -> None:
     """Plan steps should cover implemented capabilities from capabilities.yaml."""
-    _assert_plan_covers_capability_layers(plan, capabilities.implemented)
+    _assert_plan_covers_capability_layers(
+        plan,
+        capabilities.implemented,
+        allow_ui_api_substitute=allow_ui_api_substitute,
+    )
 
 
 def filter_capabilities_for_acceptance(
@@ -137,12 +181,15 @@ def filter_capabilities_for_acceptance(
 def _assert_plan_covers_capability_layers(
     plan: VerificationPlan,
     layers: CapabilityLayers,
+    *,
+    allow_ui_api_substitute: bool = False,
 ) -> None:
     for api_cap in layers.api:
-        found = any(
-            step.method.upper() == api_cap.method.upper() and step.path == api_cap.path
-            for scenario in plan.scenarios
-            for step in scenario.layers.api
+        found = _api_capability_covered(
+            plan,
+            api_cap,
+            layers.ui,
+            allow_ui_substitute=allow_ui_api_substitute,
         )
         assert found, (
             f"Plan missing API check {api_cap.method} {api_cap.path} "
@@ -173,6 +220,46 @@ def _assert_plan_covers_capability_layers(
         )
 
 
+def _api_capability_covered(
+    plan: VerificationPlan,
+    api_cap,
+    ui_caps,
+    *,
+    allow_ui_substitute: bool,
+) -> bool:
+    found = any(
+        step.method.upper() == api_cap.method.upper()
+        and _api_paths_match(api_cap.path, step.path)
+        for scenario in plan.scenarios
+        for step in scenario.layers.api
+    )
+    if found:
+        return True
+    if not allow_ui_substitute or "{" not in api_cap.path:
+        return False
+
+    ui_route = _api_path_ui_route(api_cap.path)
+    if ui_route is None:
+        return False
+
+    for ui_cap in ui_caps:
+        if ui_cap.route != ui_route:
+            continue
+        if any(
+            _ui_step_matches_capability(
+                step.instruction,
+                ui_cap.route,
+                ui_cap.title,
+                ui_cap.action,
+                ui_cap.description,
+            )
+            for scenario in plan.scenarios
+            for step in scenario.layers.ui
+        ):
+            return True
+    return False
+
+
 def _ui_step_matches_capability(
     instruction: str,
     route: str | None,
@@ -181,22 +268,24 @@ def _ui_step_matches_capability(
     description: str | None,
 ) -> bool:
     instruction_lower = instruction.lower()
-    if route is not None and (
-        route in instruction
-        or route.rstrip("/") + "/" in instruction
-        or route.rstrip("/") in instruction
-    ):
+    if route is not None and _ui_route_matches_instruction(route, instruction):
         return True
     if title is not None and title.lower() in instruction_lower:
         return True
     if action is not None and action.replace("_", " ") in instruction_lower:
         return True
-    if description is not None and any(
-        token in instruction_lower
-        for token in _tokens(description)
-        if len(token) > 4
-    ):
-        return True
+    if description is not None:
+        if any(
+            token in instruction_lower
+            for token in _tokens(description)
+            if len(token) > 4
+        ):
+            return True
+        significant = _significant_tokens(description)
+        if significant:
+            overlap = len(significant & _significant_tokens(instruction)) / len(significant)
+            if overlap >= 0.65:
+                return True
     return False
 
 
